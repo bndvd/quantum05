@@ -1,0 +1,158 @@
+<div ng-show="authSuccess">
+
+	<!-- Sidebar -->
+	<div class="w3-sidebar w3-grey w3-bar-block" style="width: 200px">
+		<p ng-click="showManagePageIndex(MANAGE_PAGE_SECURITIES)" class="w3-bar-item w3-button">Securities</p>
+		<p ng-click="showManagePageIndex(MANAGE_PAGE_RATIOS)" class="w3-bar-item w3-button">Target Ratios</p>
+		<p ng-click="showManagePageIndex(MANAGE_PAGE_SETTINGS)" class="w3-bar-item w3-button">Settings</p>
+		<p ng-click="showManagePageIndex(MANAGE_PAGE_BACKUP)" class="w3-bar-item w3-button">Backup</p>
+	</div>
+	
+	<!-- Page Content -->
+	<div style="margin-left: 200px">
+
+
+	<!-- ASSETS & SECURITIES -->
+	<div ng-show="(managePageIndex == MANAGE_PAGE_SECURITIES)"	class="w3-container w3-display-container">
+		<h2 class="w3-left-align">Securities</h2>
+		
+		<div class="w3-container w3-light-grey">
+			<h4>Assets</h4>
+		</div>
+		
+		<div class="w3-margin">
+			<ul class="w3-ul w3-border" style="width:50%">
+				<li ng-repeat="a in manageAssets">{{ a.basketName }}</li>
+			</ul>
+		</div>
+		
+		<div class="w3-margin w3-margin-bottom">
+			<form name="addAssetForm">
+				<input name="newAsset" ng-model="manageNewAsset" type="text" 
+						value="{{ manageNewAsset }}" class="w3-padding w3-border" style="width:50%"
+						placeholder="Enter asset name" required>
+						
+				<button ng-disabled="!(addAssetForm.newAsset.$valid)"
+						ng-click="saveAsset()" class="w3-button w3-grey">+</button>
+			</form>
+		</div>
+		
+		<div class="w3-container w3-light-grey">
+			<h4>Securities</h4>
+		</div>
+		
+		<div class="w3-margin">
+			<ul class="w3-ul w3-border" style="width:50%">
+				<li ng-repeat="s in manageSecurities">{{ s.symbol }}  ({{ s.basketName }})</li>
+			</ul>
+		</div>
+		
+		<div class="w3-margin w3-margin-bottom">
+			<form name="addSecurityForm">
+				<select name="newSecurityBasket" ng-model="manageNewSecurityBasketId" class="w3-select" style="width:30%" required>
+					<option value="" selected disabled hidden>Select asset</option>
+					<option ng-repeat="a in manageAssets" value="{{ a.basketId }}">{{ a.basketName }}</option>
+				</select>
+				<input name="newSecurity" ng-model="manageNewSecurity" type="text" 
+						value="{{ manageNewSecurity }}" class="w3-padding w3-border" style="width:50%"
+						placeholder="Enter security ticker symbol" required>
+						
+				<button ng-disabled="!(addSecurityForm.newSecurity.$valid && addSecurityForm.newSecurityBasket.$valid)"
+						ng-click="saveSecurity()" class="w3-button w3-grey">+</button>
+			</form>
+		</div>
+		
+	</div>
+
+	<!-- TARGET RATIOS -->
+	<div ng-show="(managePageIndex == MANAGE_PAGE_RATIOS)"	class="w3-container w3-display-container">
+		<h2 class="w3-left-align">Target Ratios</h2>
+		<span class="w3-display-topright">
+			<button ng-disabled="!(targetRatiosForm.$dirty)"
+					ng-click="saveTargetRatios();targetRatiosForm.$setPristine();" class="w3-button w3-grey">Save</button>
+		</span>
+		
+		<div>
+			<form name="targetRatiosForm">
+				<table class="w3-table w3-striped">
+					<tr class="w3-grey">
+						<th>Asset</th>
+						<th>Ratio Factor</th>
+					</tr>
+					<tr ng-repeat="r in manageTargetRatiosByAsset">
+						<td>{{ r.basketName }}</td>
+						<td><input ng-model="r.ratio" type="number" value="{{ r.ratio }}" required></td>
+					</tr>
+				</table>
+			</form>
+		</div>
+		
+	</div>
+
+	<!-- SETTINGS -->
+	<div ng-show="(managePageIndex == MANAGE_PAGE_SETTINGS)" class="w3-container w3-display-container">
+		<h2 class="w3-left-align">Settings</h2>
+		<span class="w3-display-topright">
+			<button ng-disabled="!(settingsForm.$dirty)"
+					ng-click="saveSettings();settingsForm.$setPristine();" class="w3-button w3-grey">Save</button>
+		</span>
+		
+		<div>
+			<form name="settingsForm">
+				<table class="w3-table w3-striped">
+					<tr class="w3-grey">
+						<th>Property</th>
+						<th>Value</th>
+					</tr>
+					<tr>
+						<td>IEX Publishable Token</td>
+						<td><input name="iexToken" ng-model="propIexToken" type="text" value="{{ propIexToken }}"></td>
+					</tr>
+					<tr>
+						<td>Tax Rate (fraction of 1)</td>
+						<td><input name="taxRate" ng-model="propTaxRate" type="number" value="{{ propTaxRate }}" required></td>
+					</tr>
+					<tr>
+						<td>Contribution Amount</td>
+						<td><input name="contribution" ng-model="propContribution" type="number" value="{{ propContribution }}" required></td>
+					</tr>
+					<tr>
+						<td>Chart: Benchmark Symbol</td>
+						<td><input name="benchmarkSymbol" ng-model="propQPlotBenchmarkSymbol" type="text" value="{{ propQPlotBenchmarkSymbol }}" required></td>
+					</tr>
+					<tr>
+						<td>Chart: Simulated Target Initial Principal</td>
+						<td><input name="simTargetInitPrincipal" ng-model="propQPlotSimTargetPrinicipalInit" type="number" value="{{ propQPlotSimTargetPrinicipalInit }}" required></td>
+					</tr>
+					<tr>
+						<td>Chart: Simulated Target Incremental Principal</td>
+						<td><input name="simTargetIncrPrincipal" ng-model="propQPlotSimTargetPrinicipalIncr" type="number" value="{{ propQPlotSimTargetPrinicipalIncr }}" required></td>
+					</tr>
+					<tr>
+						<td>Chart: Simulated Target Months</td>
+						<td><input name="simTargetMonths" ng-model="propQPlotSimTargetMonths" type="number" value="{{ propQPlotSimTargetMonths }}" required></td>
+					</tr>
+					<tr>
+						<td>Chart: Simulated Target Whole Shares</td>
+						<td><input name="simTargetWholeShares" ng-model="propQPlotSimTargetWholeShares" type="checkbox"></td>
+					</tr>
+				</table>
+			</form>
+		</div>
+	</div>
+
+	<!-- BACKUP -->
+	<div ng-show="(managePageIndex == MANAGE_PAGE_BACKUP)" class="w3-container w3-display-container">
+		<h2 class="w3-left-align">Backup</h2>
+		
+		<div class="w3-margin">
+			<form name="backupFileTypeForm" class="w3-container">
+				<p><input class="w3-radio" type="radio" name="backupFileType" value="{{ MANAGE_EXPORT_CSV }}" checked> <label>CSV</label></p>
+				<p><input class="w3-radio" type="radio" name="backupFileType" value="{{ MANAGE_EXPORT_JSON }}"> <label>JSON</label></p>
+			</form>
+			<button ng-click="backupPortfolio()" class="w3-button w3-grey">Export Data to File...</button>
+		</div>
+	</div>
+
+</div>
+

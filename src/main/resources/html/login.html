@@ -1,0 +1,68 @@
+<div>
+	<center>
+	<div class="w3-panel" align="left" style="width:500px">
+	
+		<div class="w3-bar w3-black">
+			<button ng-click="selectLoginMode(LOGIN_MODE_SIGNIN)" class="b3-bar-item w3-button">Login</button>
+			<button ng-click="selectLoginMode(LOGIN_MODE_CHGPASSWORD)" class="b3-bar-item w3-button">Change Password</button>
+			<button ng-click="selectLoginMode(LOGIN_MODE_CREATE)" class="b3-bar-item w3-button">Create User</button>
+		</div>
+	
+		<!-- Login with Existing User or Change Password -->
+		<div ng-show="(loginMode == LOGIN_MODE_SIGNIN || loginMode == LOGIN_MODE_CHGPASSWORD)">
+			<form name="userLoginForm" class="w3-container w3-margin">
+			
+				<label>Username</label>
+				<input name="loginUnInput" ng-model="loginUsername" class="w3-input" type="text" required>
+			
+				<label><span ng-show="(loginMode == LOGIN_MODE_CHGPASSWORD)">Old </span>Password</label>
+				<input name="loginPwInput" ng-model="loginPassword" class="w3-input" type="password" required>
+			
+				<div ng-show="(loginMode == LOGIN_MODE_CHGPASSWORD)">
+					<label>New Password</label>
+					<input name="loginChgPwInput" ng-model="loginChgPassword" class="w3-input" type="password" required>
+					<label>Confirm New Password</label>
+					<input name="loginChgPwRetypeInput" ng-model="loginChgPasswordRetype" class="w3-input" type="password" required>
+					<p ng-show="(loginChgPassword!=loginChgPasswordRetype)"><i>New passwords must match</i></p>
+				</div>
+			
+				<p><b>{{ authMsg }}</b></p>
+
+				<p class="w3-right-align">
+					<button ng-disabled="!(userLoginForm.loginUnInput.$valid && userLoginForm.loginPwInput.$valid &&
+							(loginMode==LOGIN_MODE_SIGNIN ||
+							(userLoginForm.loginChgPwInput.$valid && userLoginForm.loginChgPwRetypeInput.$valid &&
+							loginChgPassword==loginChgPasswordRetype)) )" 
+						ng-click="loginSubmit()" class="w3-button w3-grey">Submit</button>
+				</p>
+			</form>
+		</div>	
+		
+		<!-- Create a New User -->
+		<div ng-show="(loginMode == LOGIN_MODE_CREATE)">
+			<form name="userCreateForm" class="w3-container w3-margin">
+			
+				<label>New Username</label>
+				<input name="createUnInput" ng-model="loginNewUsername" class="w3-input" type="text" required>
+			
+				<label>Password</label>
+				<input name="createPwInput" ng-model="loginNewPassword" class="w3-input" type="password" required>
+			
+				<label>Confirm Password</label>
+				<input name="createPwRetypeInput" ng-model="loginNewPasswordRetype" class="w3-input" type="password" required>
+			
+				<p><b>{{ createMsg }}</b></p>
+				<p ng-show="(loginNewPassword!=loginNewPasswordRetype)"><i>Passwords must match</i></p>
+
+				<p class="w3-right-align">
+					<button ng-disabled="!(userCreateForm.createUnInput.$valid && userCreateForm.createPwInput.$valid &&
+										userCreateForm.createPwRetypeInput.$valid && (loginNewPassword==loginNewPasswordRetype))" 
+						ng-click="createUsername()" class="w3-button w3-grey">Create</button>
+				</p>
+			</form>
+		</div>	
+		
+		
+	</div>
+	</center>
+</div>

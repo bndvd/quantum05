@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="utf-8"/>
+	<title>Quantum</title>
+</head>
+
+<script type="text/javascript" src="angular.min.js"></script>
+<script type="text/javascript" src="angular-route.min.js"></script>
+<script type="text/javascript" src="dygraph.min.js"></script>
+<script type="text/javascript" src="quantum.js"></script>
+<script type="text/javascript" src="user.js"></script>
+<script type="text/javascript" src="dashboard.js"></script>
+<script type="text/javascript" src="charts.js"></script>
+<script type="text/javascript" src="transactions.js"></script>
+<script type="text/javascript" src="manage.js"></script>
+<link rel="stylesheet" type="text/css" href="w3.css">
+<link rel="stylesheet" type="text/css" href="dygraph.css">
+
+<body ng-app="qApp">
+
+	<!-- TOP BAR :  Logo,  login/logout links-->
+	<div class="w3-panel w3-display-container">
+		<span name="quantum-logo">
+			quantum 1.5.0
+		</span>
+		<span class="w3-display-topright w3-margin-right">
+			<span ng-show="!authSuccess"><a href="#!login">Login</a></span>
+			<span ng-show="authSuccess"><a ng-click="logout()" href="#!">Logout <b>{{ authSession.username }}</b></a></span>
+		</span>
+	</div>
+
+	<!-- MIDDLE PAGE SELECTION BAR : Dashboard, Transactions, Manage -->
+	<div ng-show="authSuccess" class="w3-bar w3-black">
+		<a href="#!dashboard" class="w3-bar-item w3-button">DASHBOARD</a>
+		<a href="#!charts" class="w3-bar-item w3-button">CHARTS</a>
+		<a href="#!transactions" class="w3-bar-item w3-button">TRANSACTIONS</a>
+		<a href="#!manage" class="w3-bar-item w3-button">MANAGE</a>
+		<a href="#!help" class="w3-bar-item w3-button">?</a>
+	</div>
+	
+	<!-- the container that displays the content of #! selections -->
+	<div class="w3-container w3-padding-16" ng-view></div>
+
+</body>
+
+</html>

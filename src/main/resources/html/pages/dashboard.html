@@ -1,0 +1,80 @@
+<div ng-show="authSuccess">
+
+<div class="w3-margin">
+	<table class="w3-table w3-striped w3-small">
+		<tr class="w3-black">
+			<th class="w3-right-align">Asset</th>
+			<th></th>
+			<th class="w3-right-align">Principal</th>
+			<th class="w3-right-align">Value</th>
+			<th class="w3-right-align">Unrlzd Gain</th>
+			<th class="w3-right-align">Rlzd Gain</th>
+			<th class="w3-right-align">Total Gain</th>
+			<th></th>
+			<th class="w3-right-align">Target Ratio</th>
+			<th class="w3-right-align">Curr Ratio</th>
+			<th class="w3-right-align">Delta</th>
+			<th class="w3-right-align">Contribution</th>
+			<th></th>
+			<th class="w3-right-align">Rlzd Gain YTD</th>
+			<th class="w3-right-align">Tax YTD</th>
+		</tr>
+		<tr ng-repeat="a in assets">
+			<td class="w3-right-align"><b>{{ a.basketName }}</b></td>
+			<td></td>
+			<td class="w3-right-align">{{ a.principal | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ a.lastValue | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ a.unrealizedGain | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ a.realizedGain | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ (a.realizedGain + a.unrealizedGain) | currency : "$" : 0 }}</td>
+			<td></td>
+			<td class="w3-right-align">{{ a.targetRatio | number : 3 }}</td>
+			<td class="w3-right-align">{{ a.currentRatio | number : 3 }}</td>
+			<td class="w3-right-align">{{ a.ratioDeltaValue | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ a.contribution | currency : "$" : 0 }}</td>
+			<td></td>
+			<td class="w3-right-align">{{ a.realizedGainYtd | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ a.realizedGainYtdTax | currency : "$" : 0 }}</td>
+		</tr>
+		<tr class="w3-grey">
+			<td class="w3-right-align">TOTAL</td>
+			<td></td>
+			<td class="w3-right-align">{{ assetsTotalPrincipal | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ assetsTotalLastValue | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ assetsTotalUnrealizedGain | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ assetsTotalRealizedGain | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ (assetsTotalRealizedGain + assetsTotalUnrealizedGain) | currency : "$" : 0 }}</td>
+			<td></td>
+			<td class="w3-right-align">{{ 1.0 | number : 3 }}</td>
+			<td class="w3-right-align">{{ 1.0 | number : 3 }}</td>
+			<td class="w3-right-align">{{ 0.0 | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ assetsTotalContribution | currency : "$" : 0 }}</td>
+			<td></td>
+			<td class="w3-right-align">{{ assetsTotalRealizedGainYtd | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ assetsTotalRealizedGainYtdTax | currency : "$" : 0 }}</td>
+		</tr>
+	</table>
+</div>
+
+<div class="w3-margin">
+	<table class="w3-table w3-striped w3-small" style="width:50%">
+		<tr class="w3-black">
+			<th class="w3-right-align">Security</th>
+			<th class="w3-right-align">Principal</th>
+			<th class="w3-right-align">Price</th>
+			<th class="w3-right-align">Shares</th>
+			<th class="w3-right-align">Value</th>
+			<th class="w3-right-align">Unrlzd Gain</th>
+		</tr>
+		<tr ng-repeat="p in positions">
+			<td class="w3-right-align"><b>{{ p.symbol }}</b></td>
+			<td class="w3-right-align">{{ p.principal | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ p.lastPrice | currency : "$" : 2 }}</td>
+			<td class="w3-right-align">{{ p.shares | number : 3 }}</td>
+			<td class="w3-right-align">{{ p.lastValue | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ p.unrealizedGain | currency : "$" : 0 }}</td>
+		</tr>
+	</table>
+</div>
+
+</div>

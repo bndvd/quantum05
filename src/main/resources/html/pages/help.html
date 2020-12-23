@@ -1,0 +1,335 @@
+<div ng-show="authSuccess">
+
+<div class="w3-container w3-grey">
+<h4>DASHBOARD</h4>
+</div>
+
+<div class="w3-container">
+
+<p><b>Security</b> – Individual stocks, ETFs, or index funds, represented by a ticker symbol (e.g., VTI, VTSMX, AAPL, MSFT)
+
+<p><b>Asset</b> – Group of Securities that represent the same underlying ETF/fund/etc. (e.g., Total Stock Mkt Asset = Security VTI + Security VTSAX)
+
+<p><b>Principal</b> – Dollars invested, which is the amount you initially paid for the current shares that you own. This amount goes down as you sell shares (in proportion to the original investment, which is not affected by the current Value). Principal is always positive or zero.
+
+<p><b>Cash</b> – The dollar amount of cash needed to be invested in a given portofio to sustain the portfolio. Cash gets reduced as proceeds from the portfolio flow back to the investor (via dividend and sales) reducing the original invested cash. Cash can have a negative value (indicating a surplus in cash reserves from profit, which is not used to finance the current portfolio).
+
+<p><b>Price</b> – The latest price per share of the Security (may lag by 10-15 min during market hours) 
+<br><i>Note: During off-market hours, Quantum will use day’s closing price.</i>
+
+<p><b>Shares</b> – Number of shares of each Security that you currently own
+<br><i>Note: If you sold 100% of a Security, it will no longer be displayed in the Securities table.</i>
+
+<p><b>Value</b> – The current dollar value of a Security or Asset. [Price x Shares]
+
+<p><b>Unrlzd Gain</b> – Unrealized gain is the profit/loss on all of your <b>unsold</b> Shares. This represents the capital gains that would be achieved if the Asset were sold at the current Price.  [Value – Principal]
+<br><i>Note: A positive value represents profit, while a negative value represents loss.</i>
+
+<p><b>Rlzd Gain</b> – Realized gain is the profit/loss on the <b>sold</b> shares. This includes profit from capital gains and dividend payouts.  [Value – Principal, at the time of sale]
+<br><i>Note: A positive value represents profit, while a negative value represents loss.</i>
+
+<p><b>Total Gain</b> – Total gain, realized and unrealized. [Unrlzd Gain + Rlzd Gain]
+
+<p><b>Target Ratio</b> – User-defined target proportion of the Asset Value in relation to the total portfolio Value, as a fraction of 1 (e.g., a 25% target proportion is represented as a Target Ratio of 0.25). 
+
+<p><b>Curr Ratio</b> – The current actual proportion of the Asset Value in relation to the total portfolio Value, as a fraction of 1.
+
+<p><b>Delta</b> – The difference between Target Ratio and Curr Ratio.  This measures how far off each Asset’s current Value is from the targeted Value (as derived from the user-defined Target Ratio) and can help guide decisions on which Asset(s) to invest into to align closer to Target Ratio. [Curr Value – Target Value]
+
+<div class="w3-container">
+<p><i>In the following example, you are over-invested in MSFT and under-invested in AAPL.  To drive Asset Value toward the Target Ratio, your next investment would be in AAPL.
+</i>
+<table class="w3-table w3-bordered">
+<tr class="w3-light-grey">
+<td>ASSET</td>
+<td>TARGET $$</td>
+<td>CURRENT $$</td>
+<td>DELTA = (CURR - TARGET)</td>
+</tr><tr>
+<td>AAPL</td>
+<td>$7,000 @ 70%</td>
+<td>$6,000 @ 60%</td>
+<td>-$1,000</td>
+</tr><tr>
+<td>MSFT</td>
+<td>$2,000 @ 20%</td>
+<td>$3,000 @ 30%</td>
+<td>$1,000</td>
+</tr><tr>
+<td>FB</td>
+<td>$1,000 @ 10%</td>
+<td>$1,000 @ 10%</td>
+<td>$0</td>
+</tr><tr>
+<td><i>Total</i></td>
+<td><i>$10,000</i></td>
+<td><i>$10,000</i></td>
+<td></td>
+</tr>
+</table>
+</div>
+
+<br>
+<p><b>Contribution</b> – Allocates user-defined Contribution dollar amount across the current Assets for the next investment to drive towards rebalancing the Asset mix to align with Target Ratios. 
+
+<p><b>Rlzd Gain YTD</b> – The Rlzd Gain for the current calendar year, stating on Jan 1.
+
+<p><b>Tax YTD</b> – using a pre-set tax % assigned by user, this is a calculation of the potential tax on the gains made year-to-date.
+
+
+<div class="w3-container">
+<p><i>The table below demonstrates the effect of several transactions on the portfolio calculations and the ties together the above concepts.
+</i>
+<table class="w3-table w3-bordered">
+<tr class="w3-light-grey">
+<td>Transaction</td>
+<td>Share Price</td>
+<td>Dividend</td>
+<td>Principal</td>
+<td>Cash</td>
+<td>Owned Shares</td>
+<td>Portfolio Value</td>
+<td>Realized Gain</td>
+<td>Unrealized Gain</td>
+<td>Total Gain</td>
+</tr><tr>
+<td>Buy 10 shares</td>
+<td>$1</td>
+<td>-</td>
+<td>$10</td>
+<td>$10</td>
+<td>10</td>
+<td>$10</td>
+<td>$0</td>
+<td>$0</td>
+<td>$0</td>
+</tr><tr>
+<td>-</td>
+<td>$10</td>
+<td>-</td>
+<td>$10</td>
+<td>$10</td>
+<td>10</td>
+<td>$100</td>
+<td>$0</td>
+<td>$90</td>
+<td>$90</td>
+</tr><tr>
+<td>Sell 5 shares</td>
+<td>$10</td>
+<td>-</td>
+<td>$5</td>
+<td>-$40</td>
+<td>5</td>
+<td>$50</td>
+<td>$45</td>
+<td>$45</td>
+<td>$90</td>
+</tr><tr>
+<td>Buy 5 shares</td>
+<td>$10</td>
+<td>-</td>
+<td>$55</td>
+<td>$10</td>
+<td>10</td>
+<td>$100</td>
+<td>$45</td>
+<td>$45</td>
+<td>$90</td>
+</tr><tr>
+<td>-</td>
+<td>$1</td>
+<td>-</td>
+<td>$55</td>
+<td>$10</td>
+<td>10</td>
+<td>$10</td>
+<td>$45</td>
+<td>-$45</td>
+<td>$0</td>
+</tr><tr>
+<td>Dividend $0.10/share</td>
+<td>$1</td>
+<td>$1</td>
+<td>$55</td>
+<td>$9</td>
+<td>10</td>
+<td>$10</td>
+<td>$46</td>
+<td>-$45</td>
+<td>$1</td>
+</tr>
+</table>
+</div>
+
+</div>
+<br><br>
+
+
+
+<div class="w3-container w3-grey">
+<h4>CHARTS</h4>
+</div>
+
+<div class="w3-container">
+
+<p><h5><u>“Portfolio vs Benchmark” Chart</u></h5>
+
+<p>Comparison over time of (starting with the date of your first Transaction):
+<ul>
+<li>Your <b>portfolio</b> Value (labeled with the username entered to log into Quantum)</li>
+<li>An equivalent <b>benchmark</b> portfolio, using a benchmark security, such as the VTI to represent the U.S. stock market.
+	<br><i>Note: The benchmark Security can be configured in the Manage tab.</i></li>
+<li>An equivalent <b>cash</b> portfolio (representing the cash needed to finance your portfolio or the benchmark portfolio).
+	<br><i>Note: Cash values can be negative (see Cash definition); however, for simplicity the graph will display zero values for any negative Cash values.</i></li>
+</ul>
+
+<p>You can click and drag across a region of a graph to zoom in on a specific timeframe.  Double-click anywhere in the graph to revert the view to the full timeframe.
+<br>
+
+<p><h5><u>“Simulated Target Portfolio vs Benchmark” Chart</u></h5>
+
+<p>Simulated comparison over the last 5 years of:
+<ul>
+<li>A <b>cash</b> portfolio starting with an initial amount and adding an incremental amount daily.
+	<br><i>Note: The default initial amount is $10,000 and an incremental daily amount of $20.</i></li>
+<li>An equivalent <b>benchmark</b> portfolio of investing the dollars in the cash portfolio into a benchmark security.</li>
+<li>An equivalent <b>target</b> portfolio of investing a mix of Assets that aims to closely track the user-defined Target Ratios. The portfolio only performs the initial purchase and the daily incremental purchases, and does not perform any selling or rebalancing.  The portfolio attempts to show what you can achieve with an initial investment followed by regular incremental investments into a mix of assets targeting the Target Ratios, instead of investing into a benchmark or keeping the money as cash.</li>
+</ul>
+
+</div>
+<br>
+
+
+
+
+<div class="w3-container w3-grey">
+<h4>TRANSACTIONS</h4>
+</div>
+
+<div class="w3-container">
+
+<p>Quantum supports 5 types of Transactions.  Each Transaction entry requires you to enter the Date, Transaction Type, Shares, and Price.
+<br><br>
+
+<div class="w3-container">
+<table class="w3-table w3-bordered">
+<tr class="w3-light-grey">
+<td>TRANSACTION TYPE</td>
+<td>DESCRIPTION</td>
+<td>SHARES</td>
+<td>PRICE</td>
+</tr><tr>
+<td>BUY</td>
+<td>Purchase of a Security*</td>
+<td>Number of Shares purchased</td>
+<td>Price per Share at which the Security was purchased</td>
+</tr><tr>
+<td>SEL</td>
+<td>Sale of a Security*</td>
+<td>Number of Shares sold</td>
+<td>Price per Share at which the Security was sold</td>
+</tr><tr>
+<td>DIV</td>
+<td>Dividend paid to you for a Security you own</td>
+<td>Number of Shares owned at the time of the dividend payout</td>
+<td>Dollar per share that the dividend paid out
+	<br><i>Note: You can use a finance website to get this information if needed (e.g., Yahoo Finance).</i></td>
+</tr><tr>
+<td>SPL</td>
+<td>Stock split of a Security you own</td>
+<td>Number of new Shares after the split representing 1 old Share before the split (e.g. if a stock splits 3 for 1, this value would be 3)</td>
+<td>Price per Share after the split</td>
+</tr><tr>
+<td>CNV</td>
+<td>Conversion of a fund from one level into another, resulting in a new number of owned Shares and Share Price, without changing the Value</td>
+<td>Number of Shares you own after the conversion</td>
+<td>Price per Share after the conversion</td>
+</tr>
+</table>
+</div>
+
+<p><i>* Occasionally the broker will split a single Buy or Sell Transaction into multiple transactions. Each broker Transaction needs to be entered separately.</i>
+<br><br>
+
+<p><b>Add (+)</b> to a add a new Transaction
+<ul>
+<li>You can enter transactions in any order, but Quantum will assign an ID to each transaction in the order that they were entered.</li>
+<li>For BUY/SEL transactions, use the following dates in Transaction entry:
+<ul>
+<li>Robinhood: (Submitted vs Filled date) – use <b>Filled date</b> (this is the date displayed in the History log. The two dates will be identical unless you submit a transaction in off-hours, in which case the transaction will be queued until the market opens and the transaction can be executed.</li> 
+<li>If using the Trade Confirmation data:  use <b>Trade date</b> (not Settlement date), which should match the Filled Date.</li>
+</ul>
+</li>
+</ul>
+
+<p><b>Remove (-)</b> to permanently delete an existing Transaction
+
+<p><b>Modify (…)</b> to modify the Price of an existing Transaction
+<ul>
+<li>The only field that can be modified in an existing Transaction is Price.</li>
+<li>Timing of entering new Transactions:
+<ul>
+<li>If entering a Transaction into Quantum within the same day of the transaction, Robinhood will display the Price at 2 decimal places.</li>
+<li>For better precision, you can revise the Price to 4 decimal places once available in Robinhood the following day. In Robinhood, go to “History”, select the Transaction.  Within the expanded Transaction view, click “Download Trade Confirmation” to view the 4-decimal Price.  Click on the (…) button of the Transaction in Quantum to revise the Price.</li>
+<li>Also, note that the monthly/annual statements only display 2 decimals in the Price.</li>
+</ul></li>
+</ul>
+
+</div>
+<br>
+
+
+
+
+
+
+<div class="w3-container w3-grey">
+<h4>MANAGE</h4>
+</div>
+
+<div class="w3-container">
+
+<p><b>Securities</b>
+<p>Add Assets and Securities here.  First add the Assets, then add the Securities within an Asset.  The Asset names can be anything you choose. The Security names must match the market ticker symbols.
+<br><br>
+
+<p><b>Target Ratios</b>
+<ul>
+<li>All entered Assets will appear in the Target Ratios panel.</li>
+<li>Enter any numerical value in the Ratio Factor text boxes, such that the Assets are properly represented in the target proportion relative to one another.  E.g., entering 1 for 2 Assets will give each Asset a 50% allocation; entering 200 for Asset A, and 100 for each of Assets B and C will allocate 50% to A and 25% to B and C each.</li>
+<li>Hit <b>Save</b></li>
+</ul>
+<br>
+
+<p><b>Settings</b>
+<ul>
+<li><b>IEX Publishable Token</b>: You need to set up an account with IEX Cloud, and enter the IEX publishable token in this field. Go to <a target="_blank" href="https://iexcloud.io">http://iexcloud.io</a> to register.<br><br></li>
+
+<li><b>Tax Rate</b>: enter a decimal (<1.0) to represent the desired marginal tax rate at which the capital gains and dividends are expected to be taxed
+<br><i>Note: You can use the tax rate based on your salary bracket, or a generic rate 25-30%.</i><br><br></li>
+
+<li><b>Contribution Amount</b>: The dollar amount of your next investment (either as one-time, or at a regular weekly/bi-weekly/monthly/etc. cadence)<br><br></li>
+
+<li><b>Chart: Benchmark Symbol</b>:  A benchmark security against which you will compare your portfolio’s performance. E.g., if you want to benchmark against the U.S. stock market, you can use “VTI”.  If not user-defined, Quantum will use “VTI”.<br><br></li>
+
+<li><b>Chart: Simulated Target Initial Principal</b>:  The “Simulated Target Portfolio vs Benchmark” chart simulates a portfolio with an initial investment and regular daily increment investment.  This parameter defines the initial dollar amount.<br><br></li>
+
+<li><b>Chart: Simulated Target Incremental Principal</b>: The daily incremental investment used in the “Simulated Target Portfolio vs Benchmark” chart.<br><br></li>
+
+<li><b>Chart: Simulated Target Months</b>: The time period of the Simulated Target chart, in terms of the most recent number of months. If 0, Quantum will use the max time period available.<br><br></li>
+
+<li><b>Chart: Simulated Target Whole Shares</b>:  This option simulates in the “Simulated Target Portfolio vs Benchmark” chart the effect of buying partial vs whole shares. This option typically does not have a significant effect, and can be ignored for most purposes.<br><br></li>
+
+<li>Hit <b>Save</b> to save any changes to “Settings”.</li>
+</ul>
+<br>
+
+<p><b>Backup</b>
+<p>It is a best practice to back up your Quantum data regularly (e.g. once a quarter).  Select the format (CSV / JSON) and export/save the file.  If any technical issues are encountered with your laptop/application/lost data, etc., backup files can be useful in restoring the data.
+<br><i>Note: The CSV file can also be useful for data analysis in a spreadsheet application, such as Microsoft Excel.</i>
+
+</div>
+
+</div>
+
