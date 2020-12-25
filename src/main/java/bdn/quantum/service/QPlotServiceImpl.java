@@ -130,14 +130,17 @@ public class QPlotServiceImpl implements QPlotService {
 		}
 		
 		QPlotSeries userPotfolioSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_USER_PORTFOLIO, dateChain, symbolToTransactionListMap, null,
-				QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED);
+				QuantumConstants.ADJ_TYPE_UNADJUSTED);
 		if (userPotfolioSeries == null) {
 			return null;
 		}
 		
 		
+		// // NOTE: with the use of ADJ_TYPE_UNADJUSTED for user portfolio, the value calculation is precise, and
+		// // the scaling step is longer necessary.
 		// scale all series so that userPortfolioSeries end value matches actual portfolio end value
 		// this is to reduce the deltas between actual portfolio performance and simulated portfolio performance
+		/*
 		Iterable<Asset> actualUserPortfolio = assetService.getAssets();
 		BigDecimal actualUserPortfolioLastValue = BigDecimal.ZERO;
 		for (Asset a : actualUserPortfolio) {
@@ -152,6 +155,7 @@ public class QPlotServiceImpl implements QPlotService {
 		// scale only security series, not the cash series (since it's exact)
 		benchmarkSeries.applyProgressiveScale(scalar);
 		userPotfolioSeries.applyProgressiveScale(scalar);
+		*/
 		
 
 		result.addSeries(cashSeries);
@@ -335,8 +339,10 @@ public class QPlotServiceImpl implements QPlotService {
 		}
 
 		BigDecimal secShares = BigDecimal.ZERO;
-		int nextTranIndex = 0;
 		int pointId = 0;
+		int nextTranIndex = 0;
+		AbstractTransaction t = secTranList.get(nextTranIndex);
+		LocalDate nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
 
 		for (LocalDate ld : dateChain) {
 			pointId++;
@@ -346,19 +352,46 @@ public class QPlotServiceImpl implements QPlotService {
 
 			if (qc != null) {
 				if (nextTranIndex < secTranList.size()) {
-					BigDecimal valueDelta = BigDecimal.ZERO;
-					AbstractTransaction t = secTranList.get(nextTranIndex);
-					LocalDate nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
+					// 2 methods for computing plot points:
+					// (a) for adjusted historical quote data, use the value delta method
+					// this also must be used for taking transactions in one security, but computing
+					// the portfolio value if the same investment were made in another security instead
+					// (e.g., benchmark series in the std growth plot)
+					// (b) for unadjusted historical quote data - this is a more precise method
+					// but must be used when plotting actual data (same securities as transactions), not
+					// hypothetical values. here we take care of stock splits, conversions
+					
+					BigDecimal shareDelta = BigDecimal.ZERO;
 
 					while (nextTranLocalDate.isBefore(ld) || nextTranLocalDate.isEqual(ld)) {
 						
-						if (t.getType().equals(QuantumConstants.TRAN_TYPE_BUY)) {
-							BigDecimal tranValue = t.getShares().multiply(t.getPrice());
-							valueDelta = valueDelta.add(tranValue);
+						if (adjustmentType.equals(QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED)) {
+							BigDecimal valueDelta = BigDecimal.ZERO;
+							if (t.getType().equals(QuantumConstants.TRAN_TYPE_BUY)) {
+								BigDecimal tranValue = t.getShares().multiply(t.getPrice());
+								valueDelta = valueDelta.add(tranValue);
+							}
+							else if (t.getType().equals(QuantumConstants.TRAN_TYPE_SELL)) {
+								BigDecimal tranValue = t.getShares().multiply(t.getPrice());
+								valueDelta = valueDelta.subtract(tranValue);
+							}
+							BigDecimal tranShareDelta = valueDelta.divide(qc.getClose(adjustmentType),
+									QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
+							shareDelta = shareDelta.add(tranShareDelta);
 						}
-						else if (t.getType().equals(QuantumConstants.TRAN_TYPE_SELL)) {
-							BigDecimal tranValue = t.getShares().multiply(t.getPrice());
-							valueDelta = valueDelta.subtract(tranValue);
+						else if (adjustmentType.equals(QuantumConstants.ADJ_TYPE_UNADJUSTED)) {
+							if (t.getType().equals(QuantumConstants.TRAN_TYPE_BUY)) {
+								shareDelta = shareDelta.add(t.getShares());
+							}
+							else if (t.getType().equals(QuantumConstants.TRAN_TYPE_SELL)) {
+								shareDelta = shareDelta.subtract(t.getShares());
+							}
+							else if (t.getType().equals(QuantumConstants.TRAN_TYPE_SPLIT)) {
+								secShares = secShares.multiply(t.getShares());
+							}
+							else if (t.getType().equals(QuantumConstants.TRAN_TYPE_CONVERSION)) {
+								secShares = t.getShares();
+							}
 						}
 
 						nextTranIndex++;
@@ -369,8 +402,6 @@ public class QPlotServiceImpl implements QPlotService {
 						nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
 					}
 
-					BigDecimal shareDelta = valueDelta.divide(qc.getClose(adjustmentType),
-							QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
 					secShares = secShares.add(shareDelta);
 				}
 
