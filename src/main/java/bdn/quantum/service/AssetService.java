@@ -13,6 +13,7 @@ public interface AssetService {
 	public Iterable<BasketEntity> getBaskets();
 	public BasketEntity createBasket(BasketEntity basket);
 	public Security getSecurity(Integer id);
+	public Security getSecurityForSymbol(String symbol);
 	public Iterable<Security> getSecurities();
 	public Iterable<Security> getSecuritiesInBasket(Integer basketId);
 	public Security createSecurity(Security security);

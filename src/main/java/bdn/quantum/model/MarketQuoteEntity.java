@@ -41,6 +41,8 @@ public class MarketQuoteEntity {
 	private BigDecimal uVolume;
 
 	@Column(name = QuantumConstants.MKTQUOTE_CLOSE)
+	// this may be adjusted or not adjusted for stock splits
+	// special algorithm is needed to determine which it is based on split events
 	private BigDecimal close;
 	// calculated adjusted close based on possible recent stock splits
 	private BigDecimal adjustedClose = null;
@@ -140,9 +142,6 @@ public class MarketQuoteEntity {
 	}
 	
 	public BigDecimal getAdjustedClose() {
-		if (adjustedClose == null) {
-			return getClose();
-		}
 		return adjustedClose;
 	}
 

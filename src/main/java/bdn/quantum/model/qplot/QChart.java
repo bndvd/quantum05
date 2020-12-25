@@ -32,8 +32,8 @@ public class QChart {
 		return ModelUtils.stringToDate(quote.getMktDate());
 	}
 	
-	public BigDecimal getClose() {
-		BigDecimal result = quote.getQuote();
+	public BigDecimal getClose(String adjustmentType) {
+		BigDecimal result = quote.getQuote(adjustmentType);
 		if (proxySymbol != null) {
 			result = fundResolverService.convertProxyToFundValue(symbol, result);
 		}

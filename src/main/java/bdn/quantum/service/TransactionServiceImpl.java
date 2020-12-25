@@ -55,6 +55,20 @@ public class TransactionServiceImpl implements TransactionService {
 		
 		return result;
 	}
+	
+	@Override
+	public Iterable<Transaction> getTransactionsForSecurityAndType(Integer secId, String type) {
+		Iterable<TranEntity> teIter = transactionRepository.findBySecIdAndType(secId, type);
+		
+		List<Transaction> result = new ArrayList<>();
+		for (TranEntity te : teIter) {
+			Transaction t = new Transaction(te);
+			result.add(t);
+		}
+		result.sort(transactionComparator);
+		
+		return result;
+	}
 
 	@Override
 	public Transaction getTransaction(Integer id) {

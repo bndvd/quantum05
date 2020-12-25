@@ -77,5 +77,7 @@ public final class QuantumConstants {
 	public static final BigDecimal SIMULATED_TARGET_PRINCIPAL_INCR = new BigDecimal(20);
 	public static final Integer SIMULATED_TARGET_PRINCIPAL_INCR_FREQ = PortfolioSimulator.INCR_PRINCIPAL_FREQ_DAILY;
 	
+	public static final String ADJ_TYPE_UNADJUSTED = "U";
+	public static final String ADJ_TYPE_SPLIT_ADJUSTED = "SA";
 	
 }

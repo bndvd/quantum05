@@ -24,7 +24,7 @@ public class IEXUriBuilder {
 		
 		StringBuffer result = new StringBuffer();
 		
-		String uriBase = URI_BASE_TEST;
+		String uriBase = URI_BASE_PROD;
 		result.append(uriBase);
 		
 		String endpoint = IEXConstants.REQ_ENDPOINT[reqId];

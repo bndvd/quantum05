@@ -57,6 +57,14 @@ public class ModelUtils {
 		}
 		return result;
 	}
+	
+	public static int compareDateStrings(String lDateStr, String rDateStr) {
+		int result = 0;
+		if (lDateStr != null && rDateStr != null) {
+			result = lDateStr.compareTo(rDateStr);
+		}
+		return result;
+	}
 
 	public static String getMostRecentDateStr(Iterable<String> dateStrIter) {
 		String result = null;

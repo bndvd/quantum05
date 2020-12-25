@@ -35,12 +35,12 @@ public class PortfolioSimulator {
 	// Returns a mapping of symbols to transaction lists, simulating a portfolio
 	//
 	public HashMap<String, List<AbstractTransaction>> simulate(BigDecimal initPrincipal, BigDecimal incrPrincipal,
-			Integer incrFrequency, boolean wholeShares, List<String> symbolList,
+			Integer incrFrequency, boolean wholeShares, String priceAdjustmentType, List<String> symbolList,
 			HashMap<String, List<QChart>> symbolToChartChainMap, HashMap<String, BigDecimal> symbolToTargetRatioMap)
 			throws PortfolioSimulationException {
 		
-		if (initPrincipal == null || incrPrincipal == null || incrFrequency == null || symbolList == null ||
-				symbolList.isEmpty() || symbolToTargetRatioMap == null ||
+		if (initPrincipal == null || incrPrincipal == null || incrFrequency == null || priceAdjustmentType == null ||
+				symbolList == null || symbolList.isEmpty() || symbolToTargetRatioMap == null ||
 				symbolToTargetRatioMap.isEmpty() || symbolToChartChainMap == null || symbolToChartChainMap.isEmpty()) {
 			throw new PortfolioSimulationException("Null, empty, or non-matching parameters");
 		}
@@ -108,7 +108,7 @@ public class PortfolioSimulator {
 				Date date = DateUtils.asDate(ld);
 				
 				for (int i = 0; i < numSecurities; i++) {
-					BigDecimal sharePrice = symbolToChartChainMap.get(symbols[i]).get(0).getClose();
+					BigDecimal sharePrice = symbolToChartChainMap.get(symbols[i]).get(0).getClose(priceAdjustmentType);
 					BigDecimal value = initPrincipal.multiply(targets[i]);
 					BigDecimal sharesToBuy = value.divide(sharePrice, QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
 					
@@ -141,7 +141,7 @@ public class PortfolioSimulator {
 						
 						Date date = DateUtils.asDate(ld);
 						for (int i = 0; i < numSecurities; i++) {
-							sharePrices[i] = symbolToChartChainMap.get(symbols[i]).get(j).getClose();
+							sharePrices[i] = symbolToChartChainMap.get(symbols[i]).get(j).getClose(priceAdjustmentType);
 						}
 						
 						int indexSecurityToBuy = getIndexOfMaxNegativeTargetRatioDisparity(targets, shareTallies, sharePrices);

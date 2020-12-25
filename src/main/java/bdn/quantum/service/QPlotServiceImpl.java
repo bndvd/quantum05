@@ -123,12 +123,14 @@ public class QPlotServiceImpl implements QPlotService {
 			return null;
 		}
 		
-		QPlotSeries benchmarkSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_BENCHMARK, dateChain, symbolToTransactionListMap, benchmarkChartChain);
+		QPlotSeries benchmarkSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_BENCHMARK, dateChain, symbolToTransactionListMap,
+				benchmarkChartChain, QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED);
 		if (benchmarkSeries == null) {
 			return null;
 		}
 		
-		QPlotSeries userPotfolioSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_USER_PORTFOLIO, dateChain, symbolToTransactionListMap, null);
+		QPlotSeries userPotfolioSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_USER_PORTFOLIO, dateChain, symbolToTransactionListMap, null,
+				QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED);
 		if (userPotfolioSeries == null) {
 			return null;
 		}
@@ -248,22 +250,24 @@ public class QPlotServiceImpl implements QPlotService {
 	}
 
 	private QPlotSeries buildChartSeries(Integer seriesType, List<LocalDate> dateChain,
-			HashMap<String, List<AbstractTransaction>> symbolToTransactionListMap, Iterable<QChart> benchmarkChartChain) {
-		if (seriesType == null || dateChain == null || symbolToTransactionListMap == null) {
+			HashMap<String, List<AbstractTransaction>> symbolToTransactionListMap, Iterable<QChart> benchmarkChartChain,
+			String adjustmentType) {
+		if (seriesType == null || dateChain == null || symbolToTransactionListMap == null || adjustmentType == null) {
 			return null;
 		}
 
 		QPlotSeries result = new QPlotSeries(seriesType);
 
-		List<QPlotPoint> points = buildPortfolioSeriesPoints(dateChain, symbolToTransactionListMap, benchmarkChartChain);
+		List<QPlotPoint> points = buildPortfolioSeriesPoints(dateChain, symbolToTransactionListMap, benchmarkChartChain, adjustmentType);
 		result.setPoints(points);
 
 		return result;
 	}
 
 	private List<QPlotPoint> buildPortfolioSeriesPoints(List<LocalDate> dateChain,
-			HashMap<String, List<AbstractTransaction>> symbolToTransactionListMap, Iterable<QChart> singlePortfolioSecChartChain) {
-		if (dateChain == null || symbolToTransactionListMap == null) {
+			HashMap<String, List<AbstractTransaction>> symbolToTransactionListMap, Iterable<QChart> singlePortfolioSecChartChain,
+			String adjustmentType) {
+		if (dateChain == null || symbolToTransactionListMap == null || adjustmentType == null) {
 			return null;
 		}
 		
@@ -284,7 +288,7 @@ public class QPlotServiceImpl implements QPlotService {
 				}
 				
 				if (secChartChain != null) {
-					List<QPlotPoint> secPoints = buildSecuritySeriesPoints(dateChain, secTranList, secChartChain);
+					List<QPlotPoint> secPoints = buildSecuritySeriesPoints(dateChain, secTranList, secChartChain, adjustmentType);
 					chartPointListsBySec.add(secPoints);
 				}
 				else {
@@ -317,8 +321,8 @@ public class QPlotServiceImpl implements QPlotService {
 	}
 
 	private List<QPlotPoint> buildSecuritySeriesPoints(List<LocalDate> dateChain, List<AbstractTransaction> secTranList,
-			Iterable<QChart> secChartChain) {
-		if (dateChain == null || secTranList == null || secChartChain == null) {
+			Iterable<QChart> secChartChain, String adjustmentType) {
+		if (dateChain == null || secTranList == null || secChartChain == null || adjustmentType == null) {
 			return null;
 		}
 
@@ -365,12 +369,12 @@ public class QPlotServiceImpl implements QPlotService {
 						nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
 					}
 
-					BigDecimal shareDelta = valueDelta.divide(qc.getClose(),
+					BigDecimal shareDelta = valueDelta.divide(qc.getClose(adjustmentType),
 							QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
 					secShares = secShares.add(shareDelta);
 				}
 
-				secValue = secShares.multiply(qc.getClose());
+				secValue = secShares.multiply(qc.getClose(adjustmentType));
 			}
 
 			QPlotPoint point = new QPlotPoint(Integer.valueOf(pointId), ld, secValue);
@@ -516,6 +520,7 @@ public class QPlotServiceImpl implements QPlotService {
 					incrPrincipal,
 					incrFrequency,
 					wholeShares,
+					QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED,
 					symbolList,
 					symbolToChartChainMap,
 					symbolToTargetRatioMap);
@@ -526,7 +531,8 @@ public class QPlotServiceImpl implements QPlotService {
 		}		
 		
 		if (symbolToTransactionsMap != null) {
-			userPortfolioSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_SIM_TARGET_PORTFOLIO, dateChain, symbolToTransactionsMap, null);
+			userPortfolioSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_SIM_TARGET_PORTFOLIO, dateChain, symbolToTransactionsMap, null,
+					QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED);
 		}
 		if (userPortfolioSeries == null) {
 			System.err.println("QPlotServiceImpl.buildSimTargetChart - Failed to create user portfolio series. Will proceed with benchmark series only.");
@@ -544,6 +550,7 @@ public class QPlotServiceImpl implements QPlotService {
 					incrPrincipal,
 					incrFrequency,
 					wholeShares,
+					QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED,
 					symbolList,
 					symbolToChartChainMap,
 					symbolToTargetRatioMap);
@@ -556,7 +563,8 @@ public class QPlotServiceImpl implements QPlotService {
 		QPlotSeries benchmarkSeries = null;
 		if (symbolToTransactionsMap != null) {
 			List<QChart> benchmarkChartChain = symbolToChartChainMap.get(benchmarkSymbol);
-			benchmarkSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_BENCHMARK, dateChain, symbolToTransactionsMap, benchmarkChartChain);
+			benchmarkSeries = buildChartSeries(QPlotSeries.QCHART_SERIES_BENCHMARK, dateChain, symbolToTransactionsMap, benchmarkChartChain,
+					QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED);
 		}
 		if (benchmarkSeries == null) {
 			System.err.println("QPlotServiceImpl.buildSimTargetChart - Failed to create benchmark series");

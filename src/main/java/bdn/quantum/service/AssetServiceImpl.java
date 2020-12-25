@@ -3,6 +3,7 @@ package bdn.quantum.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
@@ -80,6 +81,25 @@ public class AssetServiceImpl implements AssetService {
 		return result;
 	}
 
+	@Override
+	public Security getSecurityForSymbol(String symbol) {
+		Iterable<SecurityEntity> seIter = securityRepository.findBySymbol(symbol);
+
+		Security result = null;
+		if (seIter != null) {
+			Iterator<SecurityEntity> seIterator = seIter.iterator();
+			if (seIterator != null && seIterator.hasNext()) {
+				// there should only be one security with a given symbol
+				SecurityEntity se = seIterator.next();
+				if (se != null) {
+					result = new Security(se);
+				}
+			}
+		}
+
+		return result;
+	}
+	
 	@Override
 	public Iterable<Security> getSecurities() {
 		Iterable<SecurityEntity> seIter = securityRepository.findAll();

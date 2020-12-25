@@ -7,5 +7,6 @@ import bdn.quantum.model.SecurityEntity;
 public interface SecurityRepository extends CrudRepository<SecurityEntity, Integer> {
 
 	Iterable<SecurityEntity> findByBasketId(Integer basketId);
+	Iterable<SecurityEntity> findBySymbol(String symbol);
 	
 }

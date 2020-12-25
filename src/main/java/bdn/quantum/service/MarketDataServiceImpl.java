@@ -2,6 +2,7 @@ package bdn.quantum.service;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,10 +19,13 @@ import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import bdn.quantum.QuantumConstants;
 import bdn.quantum.model.MarketQuote;
 import bdn.quantum.model.MarketQuoteEntity;
 import bdn.quantum.model.MarketStatus;
 import bdn.quantum.model.MarketStatusEntity;
+import bdn.quantum.model.Security;
+import bdn.quantum.model.Transaction;
 import bdn.quantum.model.iex.IEXChart;
 import bdn.quantum.model.iex.IEXChartFull;
 import bdn.quantum.model.iex.IEXTradeDay;
@@ -40,10 +44,18 @@ public class MarketDataServiceImpl implements MarketDataService {
 	private FundResolverService fundResolverService;
 	@Autowired
 	private IEXCloudService iexCloudService;
+
 	@Autowired
 	private MarketQuoteRepository marketQuoteRepository;
 	@Autowired
 	private MarketStatusRepository marketStatusRepository;
+
+	// the following repositories help get the stock split events, used for
+	// unadjusting close prices
+	@Autowired
+	private AssetService assetService;
+	@Autowired
+	private TransactionService transactionService;
 	
 	
 	@Override
@@ -79,6 +91,7 @@ public class MarketDataServiceImpl implements MarketDataService {
 		return result;
 	}
 	
+	// Get the chain of unadjusted (for splits) daily closing prices
 	@Override
 	public List<QChart> getChartChain(String symbol, LocalDate startDate) {
 		List<QChart> qChartList = null;
@@ -226,10 +239,6 @@ public class MarketDataServiceImpl implements MarketDataService {
 			}
 		}
 		
-		// adjust the close values for a recent stock split, which would not be reflected in historic values 
-		// in the repository
-		adjustMarketQuoteChainForSplits(mqeListInRepository);
-		
 		// build data into array and ensure there are no duplicates (again, should not happen, but a precaution)
 		String lastDateAdded = null;
 		result = new ArrayList<>();
@@ -246,6 +255,9 @@ public class MarketDataServiceImpl implements MarketDataService {
 		if (todaysQuote != null) {
 			result.add(todaysQuote);
 		}
+		
+		// adjust the close values for stock splits (which may or may not be reflected in historic values in the repository)
+		adjustMarketQuoteChainForSplits(symbol, result);
 		
 		return result;
 	}
@@ -351,10 +363,141 @@ public class MarketDataServiceImpl implements MarketDataService {
 		}
 	}
 	
-	private void adjustMarketQuoteChainForSplits(List<MarketQuoteEntity> mqeList) {
-		// To be implemented when there is a stock split
-		// there is currently no good way to identify the split event 
-		return;
+	// Use an analytical algorithm to guess which quotes have been adjusted based on stock split events
+	// and the current quotes' proximity to the split vs unsplit price.
+	// Unadjust & adjust all values deemed adjusted, and update them in the MarketQuote objects
+	private void adjustMarketQuoteChainForSplits(String symbol, List<MarketQuote> mqList) {
+		if (symbol == null || mqList == null || mqList.isEmpty()) {
+			return;
+		}
+		
+		List<Transaction> splitEvents = getStockSplitTransactions(symbol);
+		if (splitEvents == null || splitEvents.isEmpty()) {
+			return;
+		}
+		
+		// we have split events for this security, we'll calculate adjusted and unadjusted from raw quote values;
+		// raw quote values can either be adjusted or unadjusted (depending on the timing of acquiring the data versus
+		// the timing of the split)
+		// the algorithm below tries to guess which on the raw quote represents based on its being closer to the proximal
+		// expected value based on the split event(s)
+		// Note: multiple split events can be present, which compounds the effect
+
+		List<BigDecimal> cumSplitFactors = new ArrayList<>();
+		// we start from the end of the list, where we assume the adjusted value and unadjusted value are equal
+		// and therefore have a split factor of 1. We also assume the split event happens at the beginning of the date
+		// of the split event (thus close price for the day happens after the split occurred).
+		cumSplitFactors.add(BigDecimal.ONE);
+		
+		int mqListLastIdx = mqList.size() - 1;
+		BigDecimal oneFactorProximalPrice = mqList.get(mqListLastIdx).getRawQuote();
+		int splitEvtIdx = splitEvents.size() - 1;
+		String splitEvtDateStr = ModelUtils.dateToString(splitEvents.get(splitEvtIdx).getTranDate());
+		
+		for (int mqIdx = mqListLastIdx; mqIdx >= 0; mqIdx--) {
+			
+			// if the market quote date passed over a split event, add split factor
+			if ((splitEvtIdx >= 0) && (ModelUtils.compareDateStrings(mqList.get(mqIdx).getMktDate(), splitEvtDateStr) < 0)) {
+				BigDecimal factor = splitEvents.get(splitEvtIdx).getShares();
+				BigDecimal cumFactor = cumSplitFactors.get(cumSplitFactors.size()-1).multiply(factor);
+				cumSplitFactors.add(cumFactor);
+				splitEvtIdx--;
+				// optimize re-reading the split date by updating it only when it changes
+				if (splitEvtIdx >= 0) {
+					splitEvtDateStr = ModelUtils.dateToString(splitEvents.get(splitEvtIdx).getTranDate());
+				}
+			}
+			// at this point (until we encounter another split event), the needed split factor to be applied to all
+			// quotes on top of a totally split "adjusted" value to get unadjusted value is in the last element of cumSplitFactors
+			// however, we may encounter either adjusted, unadjusted, or partially adjusted (in the case of multiple split events)
+			// values in the raw quote. We test to see which cumulative they are closest to when compared to our one-factor proximal
+			// value multiplied by each factor. Once we guess at the factor implied in the raw quote value, we apply the difference
+			// between the needed factor (last element of cumSplitFactors) and the actual embedded to arrive at both unadjusted and
+			// adjusted values
+			
+			MarketQuote mq = mqList.get(mqIdx);
+			BigDecimal rawQuote =  mq.getRawQuote();
+			// unadjusted quote
+			BigDecimal uQuote =  rawQuote;
+			// split adjusted quote
+			BigDecimal saQuote = rawQuote;
+			if (cumSplitFactors.size() > 1) {
+				int impliedFactorInRawQuoteIdx = computeImpliedFactor(oneFactorProximalPrice, rawQuote, cumSplitFactors);
+				
+				// compute the unadjusted value if it's not already at the desired factor (last cumSplitFactor)
+				int lastCumSplitFactorIdx = cumSplitFactors.size() - 1;
+				if (impliedFactorInRawQuoteIdx < lastCumSplitFactorIdx) {
+					BigDecimal factorDifference = cumSplitFactors.get(lastCumSplitFactorIdx);
+					// avoid division by 1.0
+					if (impliedFactorInRawQuoteIdx > 0) {
+						factorDifference = factorDifference.divide(cumSplitFactors.get(impliedFactorInRawQuoteIdx),
+							QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
+					}
+					uQuote = rawQuote.multiply(factorDifference);
+				}
+				
+				// compute the adjusted value if it's not already at a factor of 1.0
+				if (impliedFactorInRawQuoteIdx > 0) {
+					saQuote = rawQuote.divide(cumSplitFactors.get(impliedFactorInRawQuoteIdx),
+							QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
+				}
+			}
+			
+			mq.setQuote(uQuote, QuantumConstants.ADJ_TYPE_UNADJUSTED);
+			mq.setQuote(saQuote, QuantumConstants.ADJ_TYPE_SPLIT_ADJUSTED);
+			
+			oneFactorProximalPrice = saQuote;
+		}	
+	}
+	
+	private int computeImpliedFactor(BigDecimal base, BigDecimal actual, List<BigDecimal> factors) {
+		int result = 0;
+		
+		if (base != null && actual != null && factors != null && !factors.isEmpty()) {
+			try {
+				BigDecimal minOffMultiplier = base.
+						multiply(factors.get(0)).
+						divide(actual, QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP).
+						subtract(BigDecimal.ONE).
+						abs();
+				for (int i = 1; i < factors.size(); i++) {
+					BigDecimal offMultiplier = base.
+							multiply(factors.get(i)).
+							divide(actual, QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP).
+							subtract(BigDecimal.ONE).
+							abs();
+					if (offMultiplier.compareTo(minOffMultiplier) < 0) {
+						minOffMultiplier = offMultiplier;
+						result = i;
+					}
+				}
+			}
+			catch (Exception exc) {
+				System.err.println("MarketDataServiceImpl.computeImpliedFactor - Exception: " + exc.getMessage());
+			}
+		}
+		
+		return result;
+	}
+
+	private List<Transaction> getStockSplitTransactions(String symbol) {
+		List<Transaction> result = new ArrayList<>();
+		
+		if (symbol != null) {
+			Security se = assetService.getSecurityForSymbol(symbol);
+			if (se != null) {
+				Integer secId = se.getId();
+				Iterable<Transaction> tranIter = transactionService.getTransactionsForSecurityAndType(secId, QuantumConstants.TRAN_TYPE_SPLIT);
+				for (Transaction t : tranIter) {
+					result.add(t);
+				}
+			}
+			else {
+				System.err.println("MarketDataServiceImpl.getStockSplitTransactions - Error finding security for symbol " + symbol);
+			}
+		}
+		
+		return result;
 	}
 	
 }
