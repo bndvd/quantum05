@@ -27,7 +27,7 @@ public class MarketStatusEntity {
 		this.openStatus = openStatus;
 	}
 	
-	public MarketStatusEntity(MarketStatus ms) {
+	public MarketStatusEntity(MarketStatusJson ms) {
 		this.mktDate = ms.getMktDate();
 		this.openStatus = ms.getOpenStatus();
 	}

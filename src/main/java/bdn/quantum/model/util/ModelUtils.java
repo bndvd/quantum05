@@ -82,20 +82,28 @@ public class ModelUtils {
 		return result;
 	}
 	
-	public static List<String> getDateStringsFromStartDateStr(String startDateStr){
+	public static List<String> getDateStringsFromStartDateStr(String startDateStr) {
+		String todayDateStr = localDateToString(LocalDate.now());
+		return getDateStringsFromStartDateStr(startDateStr, todayDateStr, true);
+	}
+	
+	public static List<String> getDateStringsFromStartDateStr(String startDateStr, String endDateStr, boolean endDateIncl) {
 		List<String> result = new ArrayList<>();
 		LocalDate startDate = ModelUtils.stringToLocalDate(startDateStr);
-		LocalDate todaysDate = LocalDate.now();
-		int diffDays = Period.between(startDate, todaysDate).getDays();
+		LocalDate endDate = ModelUtils.stringToLocalDate(endDateStr);
+		
+		int diffDays = Period.between(startDate, endDate).getDays();
 		
 		if (diffDays > 0) {
-			Stream<LocalDate> ldStream = startDate.datesUntil(todaysDate);
+			Stream<LocalDate> ldStream = startDate.datesUntil(endDate);
 			Iterator<LocalDate> ldStreamIter = ldStream.iterator();
 			ldStreamIter.next();
 			while (ldStreamIter.hasNext()) {
 				result.add(localDateToString(ldStreamIter.next()));
 			}
-			result.add(localDateToString(todaysDate));
+			if (endDateIncl) {
+				result.add(localDateToString(endDate));
+			}
 		}
 
 		return result;

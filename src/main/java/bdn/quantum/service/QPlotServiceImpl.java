@@ -288,7 +288,16 @@ public class QPlotServiceImpl implements QPlotService {
 				// get the chart chain for that security once
 				Iterable<QChart> secChartChain = singlePortfolioSecChartChain;
 				if (secChartChain == null) {
-					secChartChain = marketDataService.getChartChain(s, dateChain.get(0));
+					// get the earliest needed date for this security
+					List<Date> tranDateList = new ArrayList<>();
+					for (AbstractTransaction t : secTranList) {
+						tranDateList.add(t.getTranDate());
+					}
+					Date earliestTranDate = ModelUtils.getCalculatedDate(tranDateList, ModelUtils.CALC_EARLIEST_DATE);
+					LocalDate startDate = ModelUtils.stringToLocalDate(ModelUtils.dateToString(earliestTranDate));
+					
+					// get chart chain for security
+					secChartChain = marketDataService.getChartChain(s, startDate);
 				}
 				
 				if (secChartChain != null) {
@@ -391,6 +400,20 @@ public class QPlotServiceImpl implements QPlotService {
 							}
 							else if (t.getType().equals(QuantumConstants.TRAN_TYPE_CONVERSION)) {
 								secShares = t.getShares();
+								
+								// if this transaction was a conversion and we're doing the unadjusted method, apply a scalar
+								// to all previous points to reduce errors that have crept in (since we don't have exact data)
+								// the new conversion price/value is a concrete point that's close to exact
+								if (! result.isEmpty()) {
+									
+									BigDecimal preConvertedValue = result.get(result.size() - 1).getValue();
+									BigDecimal postConvertedValue = secShares.multiply(qc.getClose(adjustmentType));
+									BigDecimal scalar = postConvertedValue.divide(preConvertedValue,
+											QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
+									for (QPlotPoint p : result) {
+										p.scale(scalar);
+									}
+								}
 							}
 						}
 

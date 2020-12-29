@@ -14,11 +14,11 @@ public class IEXUriBuilder {
 	
 	public String build(int reqId, Map<String, String> varMap, String token) {
 		if (reqId < 0 || reqId > IEXConstants.MAX_REQ_ID) {
-			System.err.println("IEXUrlBuilder: ERROR - Invalid request ID. Aborting bulding URL request.");
+			System.err.println("IEXUrlBuilder: ERROR - Invalid request ID. Aborting bulding URL request - reqID: " + reqId);
 			return null;
 		}
 		if (token == null) {
-			System.err.println("IEXUrlBuilder: ERROR - IEX Token undefined. Aborting bulding URL request.");
+			System.err.println("IEXUrlBuilder: ERROR - IEX Token undefined. Aborting bulding URL request - reqID: " + reqId);
 			return null;
 		}
 		

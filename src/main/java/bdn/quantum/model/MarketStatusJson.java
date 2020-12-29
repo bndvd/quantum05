@@ -4,14 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MarketStatus {
+public class MarketStatusJson {
 
 	@JsonProperty
 	private String mktDate;
 	@JsonProperty
 	private Boolean openStatus;
 
-	public MarketStatus() {
+	public MarketStatusJson() {
 	}
 
 	public String getMktDate() {

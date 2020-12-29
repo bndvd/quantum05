@@ -22,8 +22,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import bdn.quantum.QuantumConstants;
 import bdn.quantum.model.MarketQuote;
 import bdn.quantum.model.MarketQuoteEntity;
-import bdn.quantum.model.MarketStatus;
+import bdn.quantum.model.MarketQuoteJson;
 import bdn.quantum.model.MarketStatusEntity;
+import bdn.quantum.model.MarketStatusJson;
 import bdn.quantum.model.Security;
 import bdn.quantum.model.Transaction;
 import bdn.quantum.model.iex.IEXChart;
@@ -152,9 +153,16 @@ public class MarketDataServiceImpl implements MarketDataService {
 			mqeListInRepository = marketQuoteRepository.findBySymbolAndMktDateIsGreaterThanOrderByMktDateAsc(symbol, dayBeforeStartDate);
 		}
 		
-		// if no history in database, populate it
-		if (mqeListInRepository == null || ! mqeListInRepository.iterator().hasNext()) {
-			loadMaxQuoteChainIntoRepository(symbol);
+		// if no history in database or the start date predates currently available history in database, populate it
+		if (mqeListInRepository == null || mqeListInRepository.isEmpty() || 
+				(startDate != null && startDate.compareTo(mqeListInRepository.get(0).getMktDate()) < 0) ) {
+			
+			String endDate = null;
+			if (startDate != null && mqeListInRepository != null && ! mqeListInRepository.isEmpty()) {
+				endDate = mqeListInRepository.get(0).getMktDate();
+			}
+			
+			loadQuoteChainRangeIntoRepository(symbol, startDate, endDate);
 			// re-query
 			mqeListInRepository = marketQuoteRepository.findBySymbolOrderByMktDateAsc(symbol);
 		}
@@ -248,6 +256,10 @@ public class MarketDataServiceImpl implements MarketDataService {
 				System.err.println("MarketDataServiceImpl.loadQuoteChain - Found duplicate date entry & skipping add - "+mqe.getSymbol()+":"+nextDate);
 				continue;
 			}
+			else if (startDate != null && (nextDate.compareTo(startDate) < 0)) {
+				// skip quotes before start date (such as those obtained in max chart or json loads)
+				continue;
+			}
 			result.add(new MarketQuote(mqe));
 			lastDateAdded = nextDate;
 		}
@@ -275,10 +287,10 @@ public class MarketDataServiceImpl implements MarketDataService {
 					InputStream is = resource.getInputStream();
 					
 					ObjectMapper objMapper = new ObjectMapper();
-					List<MarketStatus> msList = objMapper.readValue(is, new TypeReference<List<MarketStatus>>(){});
+					List<MarketStatusJson> msjList = objMapper.readValue(is, new TypeReference<List<MarketStatusJson>>(){});
 					
 					List<MarketStatusEntity> mseList = new ArrayList<>();
-					for (MarketStatus ms : msList) {
+					for (MarketStatusJson ms : msjList) {
 						mseList.add(new MarketStatusEntity(ms));
 					}
 					marketStatusRepository.saveAll(mseList);
@@ -292,7 +304,7 @@ public class MarketDataServiceImpl implements MarketDataService {
 			}
 			// if still empty, error out
 			if (mseListInRepository == null || ! mseListInRepository.iterator().hasNext()) {
-				System.err.println("MarketDataServiceImpl.loadTradeDayCache - ERROR: could not laod initial trade day data. Exiting...");
+				System.err.println("MarketDataServiceImpl.loadTradeDayCache - ERROR: could not load initial trade day data. Exiting...");
 				return;
 			}
 			
@@ -332,34 +344,126 @@ public class MarketDataServiceImpl implements MarketDataService {
 			// Note: we fetch the # of days equal to the size of the new dates list plus 1, since
 			// we removed today from the list, but we need to count today in the # of days to go back
 			Iterable<IEXTradeDay> tdIter = iexCloudService.getTradeDays(newDatesList.size()+1);
-			for (IEXTradeDay td : tdIter) {
-				String dateOpen = td.getDate();
-				MarketStatusEntity mse = dateStrToMSE.get(dateOpen);
-				if (mse != null) {
-					mse.setOpenStatus(true);
+			if (tdIter != null) {
+				for (IEXTradeDay td : tdIter) {
+					String dateOpen = td.getDate();
+					MarketStatusEntity mse = dateStrToMSE.get(dateOpen);
+					if (mse != null) {
+						mse.setOpenStatus(true);
+					}
+				}
+				
+				Iterable<MarketStatusEntity> mseIter = dateStrToMSE.values();
+				marketStatusRepository.saveAll(mseIter);
+				mseIter = dateStrToMSE.values();
+				for (MarketStatusEntity mse : mseIter) {
+					tradeDayMapCache.put(mse.getMktDate(), mse.getOpenStatus());
 				}
 			}
-			
-			Iterable<MarketStatusEntity> mseIter = dateStrToMSE.values();
-			marketStatusRepository.saveAll(mseIter);
-			mseIter = dateStrToMSE.values();
-			for (MarketStatusEntity mse : mseIter) {
-				tradeDayMapCache.put(mse.getMktDate(), mse.getOpenStatus());
+			else {
+				System.err.println("MarketDataServiceImpl.loadTradeDayCache - ERROR: could not load trade day data from IEX Service. Exiting...");
 			}
 		}
 	}
 
-	private void loadMaxQuoteChainIntoRepository(String symbol) {
-		Iterable<IEXChart> iexChartIter = iexCloudService.getMaxChart(symbol);
+	private void loadQuoteChainRangeIntoRepository(String symbol, String startDate, String endDate) {
+		if (symbol == null) {
+			System.err.println("MarketDataServiceImpl.loadQuoteChainRangeIntoRepository - Failed to load needed data as symbol is NULL.");
+			return;
+		}
 		
+		List<MarketQuoteEntity> mqeList = new ArrayList<>();
+		
+		// first try to get the maximum number of stock quotes from IEX service
+		Iterable<IEXChart> iexChartIter = iexCloudService.getMaxChart(symbol);
 		if (iexChartIter != null) {
-			List<MarketQuoteEntity> mqeList = new ArrayList<>();
 			for (IEXChart c : iexChartIter) {
-				MarketQuoteEntity mqe = new MarketQuoteEntity(null, symbol, c.getDate(), null, null, null, null, null, c.getClose(), null, null, null, null);
+				String cDate = c.getDate();
+				if (endDate != null && cDate.compareTo(endDate) >= 0) {
+					// dates of endDate and onward are already in our database; do not add them
+					break;
+				}
+				MarketQuoteEntity mqe = new MarketQuoteEntity(null, symbol, cDate, null, null, null, null, null, c.getClose(), null, null, null, null);
 				mqeList.add(mqe);
 			}
 			
+		}
+		
+		// add data from pre-packaged data in the quantum application, if
+		// (1) IEX service did not return data, or
+		// (2) start date is not included in the data returned by IEX service
+		if (mqeList.isEmpty() || (startDate != null && startDate.compareTo(mqeList.get(0).getMktDate()) < 0)) {
+			try {
+				Resource resource = new ClassPathResource("data/mkt-hist-sec-" + symbol.toUpperCase() + ".json");
+				InputStream is = resource.getInputStream();
+				
+				ObjectMapper objMapper = new ObjectMapper();
+				List<MarketQuoteJson> mqjList = objMapper.readValue(is, new TypeReference<List<MarketQuoteJson>>(){});
+				
+				if (mqjList != null && ! mqjList.isEmpty()) {
+					if (startDate != null && mqjList.get(0).getMktDate().compareTo(startDate) > 0) {
+						System.err.println("MarketDataServiceImpl.loadQuoteChainRangeIntoRepository - Json data for " + symbol +
+								" did not include sufficient data for start-date: " + startDate);
+					}
+					
+					String earliestDateInMqeList = null;
+					if (! mqeList.isEmpty()) {
+						earliestDateInMqeList = mqeList.get(0).getMktDate();
+					}
+					
+					int insertIdx = 0;
+					for (MarketQuoteJson mqj : mqjList) {
+						String date = mqj.getMktDate();
+						if ((earliestDateInMqeList == null || date.compareTo(earliestDateInMqeList) < 0) &&
+								(endDate == null || date.compareTo(endDate) < 0)) {
+							BigDecimal close = new BigDecimal(mqj.getClose());
+							MarketQuoteEntity mqe = new MarketQuoteEntity(null, symbol, date, null, null, null, null, null,
+									close, null, null, null, null);
+							mqeList.add(insertIdx, mqe);
+							insertIdx++;
+						}
+					}
+				}
+				else {
+					System.err.println("MarketDataServiceImpl.loadQuoteChainRangeIntoRepository - Failed to load data from json file for " + symbol);
+				}
+			}
+			catch (Exception exc) {
+				System.err.println(exc.getMessage());
+			}
+		}
+		
+		if (! mqeList.isEmpty()) {
+			String earliestQuoteDate = mqeList.get(0).getMktDate();
+
+			// if our attempts to get data from IEX service as well as the json file failed include the start date,
+			// add zeros for close values to all trade days starting with the start date until the first date we have
+			// the data. this prevents trying to keep loading this data every time, which is expensive (IEX service has limits)
+			if (startDate != null) {
+				List<String> dateList = ModelUtils.getDateStringsFromStartDateStr(startDate, earliestQuoteDate, false);
+				
+				if (dateList != null && ! dateList.isEmpty()) {
+					int insertIdx = 0;
+					for (String nextDate : dateList) {
+						Boolean mktStatus = tradeDayMapCache.get(nextDate);
+						if (mktStatus != null && mktStatus.booleanValue() == true) {
+							MarketQuoteEntity mqe = new MarketQuoteEntity(null, symbol, nextDate, null, null, null, null, null,
+									BigDecimal.ZERO, null, null, null, null);
+							mqeList.add(insertIdx, mqe);
+							insertIdx++;
+						}
+					}
+					
+					System.err.println("MarketDataServiceImpl.loadQuoteChainRangeIntoRepository - Inserted zero quote values for " + symbol +
+							" between " + startDate + " and " + earliestQuoteDate + " since IEX svc and Json data failed provide this data.");
+				}
+			}
+			
 			marketQuoteRepository.saveAll(mqeList);
+		}
+		else {
+			System.err.println("MarketDataServiceImpl.loadQuoteChainRangeIntoRepository - Failed to load needed data for " + symbol +
+					", start-date: " + startDate + ", end-date: " + endDate);
 		}
 	}
 	
