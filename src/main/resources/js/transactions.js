@@ -184,7 +184,7 @@ app.controller("transactionsCtrl", function($scope, $http) {
 		if (day < 10) {
 			dayStr = "0" + day;
 		}
-		var dateStr = year + "-" + monthStr + "-" + dayStr + "T14:30:00.000";
+		var dateStr = year + "-" + monthStr + "-" + dayStr + "T08:30:00.000";
 		
 		var data = {
 				    secId: secId,

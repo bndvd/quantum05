@@ -1,7 +1,6 @@
 package bdn.quantum.model;
 
 import java.math.BigDecimal;
-import java.util.Calendar;
 import java.util.Date;
 
 //
@@ -75,17 +74,6 @@ public class Transaction implements AbstractTransaction {
 		this.tranDate = tranDate;
 	}
 	
-	public boolean isInCurrentYear() {
-		boolean result = false;
-		if (tranDate != null) {
-			Calendar tranDateCal = Calendar.getInstance();
-			tranDateCal.setTime(tranDate);
-			Calendar currentCal = Calendar.getInstance();
-			result = (tranDateCal.get(Calendar.YEAR) == currentCal.get(Calendar.YEAR));
-		}
-		return result;
-	}
-
 	@Override
 	public String getType() {
 		return type;

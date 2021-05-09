@@ -56,10 +56,14 @@ public final class QuantumConstants {
 	public static final String TRAN_TYPE_SPLIT = "SPL";
 	public static final String TRAN_TYPE_CONVERSION = "CNV";	// fund conversion
 	
+	// Cost basis
+	public static final String COSTBASIS_SHORTTERM = "Short-Term";
+	public static final String COSTBASIS_LONGTERM = "Long-Term";
+	
 	// Miscellaneous calculation constants
-	public static final int NUM_DECIMAL_PLACES_PRECISION = 20;
+	public static final int NUM_DECIMAL_PLACES_PRECISION = 24;
 	public static final int MILLIS_BETWEEN_TRANSACTIONS_ON_SAME_DATE = 1000;
-	public static final double THRESHOLD_DECIMAL_EQUALING_ZERO = 0.000000001;
+	public static final double THRESHOLD_DECIMAL_EQUALING_ZERO = 0.00000000000000000001;
 	
 	// Stock quote constants
 	public static final long IEX_DATA_CACHE_LIFE_MILLIS = 600000;

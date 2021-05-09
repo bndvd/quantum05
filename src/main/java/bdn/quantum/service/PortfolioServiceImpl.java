@@ -1,12 +1,13 @@
 package bdn.quantum.service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import bdn.quantum.model.BasketEntity;
+import bdn.quantum.model.CapitalGainFragment;
+import bdn.quantum.model.DividendFragment;
 import bdn.quantum.model.PortfolioData;
 import bdn.quantum.model.Security;
 import bdn.quantum.model.Transaction;
@@ -18,19 +19,18 @@ public class PortfolioServiceImpl implements PortfolioService {
 	AssetService assetService;
 	@Autowired
 	TransactionService transactionService;
+	@Autowired
+	IncomeService incomeService;
 	
 	@Override
 	public PortfolioData getPortfolioData() {
 		Iterable<BasketEntity> basketIter = assetService.getBaskets();
 		Iterable<Security> securities = assetService.getSecurities();
-		List<Transaction> transactions = new ArrayList<Transaction>();
+		List<Transaction> transactions = transactionService.getTransactions();
+		List<CapitalGainFragment> capitalGains = incomeService.getCapitalGainFragments(transactions);
+		List<DividendFragment> dividendIncome = incomeService.getDividendFragments(transactions);
 		
-		Iterable<Transaction> tIter = transactionService.getTransactions();
-		for (Transaction t : tIter) {
-			transactions.add(t);
-		}
-		
-		PortfolioData result = new PortfolioData(basketIter, securities, transactions);
+		PortfolioData result = new PortfolioData(basketIter, securities, transactions, capitalGains, dividendIncome);
 		return result;
 	}
 

@@ -25,7 +25,7 @@ import bdn.quantum.model.qplot.QPlotSeries;
 import bdn.quantum.model.util.AssetSymbolManager;
 import bdn.quantum.model.util.ModelUtils;
 import bdn.quantum.model.util.TransactionComparator;
-import bdn.quantum.util.DateUtils;
+import bdn.quantum.util.QuantumDateUtils;
 
 @Service("chartService")
 public class QPlotServiceImpl implements QPlotService {
@@ -186,7 +186,7 @@ public class QPlotServiceImpl implements QPlotService {
 			if (nextTranIndex < allTranList.size()) {
 				BigDecimal cashDelta = BigDecimal.ZERO;
 				AbstractTransaction t = allTranList.get(nextTranIndex);
-				LocalDate nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
+				LocalDate nextTranLocalDate = QuantumDateUtils.asLocalDate(t.getTranDate());
 				
 				while (nextTranLocalDate.isBefore(ld) || nextTranLocalDate.isEqual(ld)) {
 					
@@ -206,7 +206,7 @@ public class QPlotServiceImpl implements QPlotService {
 						break;
 					}
 					t = allTranList.get(nextTranIndex);
-					nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
+					nextTranLocalDate = QuantumDateUtils.asLocalDate(t.getTranDate());
 				}
 				
 				portfolioCash = portfolioCash.add(cashDelta);
@@ -351,7 +351,7 @@ public class QPlotServiceImpl implements QPlotService {
 		int pointId = 0;
 		int nextTranIndex = 0;
 		AbstractTransaction t = secTranList.get(nextTranIndex);
-		LocalDate nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
+		LocalDate nextTranLocalDate = QuantumDateUtils.asLocalDate(t.getTranDate());
 
 		for (LocalDate ld : dateChain) {
 			pointId++;
@@ -422,7 +422,7 @@ public class QPlotServiceImpl implements QPlotService {
 							break;
 						}
 						t = secTranList.get(nextTranIndex);
-						nextTranLocalDate = DateUtils.asLocalDate(t.getTranDate());
+						nextTranLocalDate = QuantumDateUtils.asLocalDate(t.getTranDate());
 					}
 
 					secShares = secShares.add(shareDelta);

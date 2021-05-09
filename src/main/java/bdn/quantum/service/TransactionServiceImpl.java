@@ -29,7 +29,7 @@ public class TransactionServiceImpl implements TransactionService {
 
 
 	@Override
-	public Iterable<Transaction> getTransactions() {
+	public List<Transaction> getTransactions() {
 		Iterable<TranEntity> teIter = transactionRepository.findAll();
 		
 		List<Transaction> result = new ArrayList<>();
@@ -43,7 +43,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 	
 	@Override
-	public Iterable<Transaction> getTransactionsForSecurity(Integer secId) {
+	public List<Transaction> getTransactionsForSecurity(Integer secId) {
 		Iterable<TranEntity> teIter = transactionRepository.findBySecId(secId);
 		
 		List<Transaction> result = new ArrayList<>();
@@ -57,7 +57,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 	
 	@Override
-	public Iterable<Transaction> getTransactionsForSecurityAndType(Integer secId, String type) {
+	public List<Transaction> getTransactionsForSecurityAndType(Integer secId, String type) {
 		Iterable<TranEntity> teIter = transactionRepository.findBySecIdAndType(secId, type);
 		
 		List<Transaction> result = new ArrayList<>();

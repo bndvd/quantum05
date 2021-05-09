@@ -7,7 +7,12 @@ app.controller("dashboardCtrl", function($scope, $http) {
 	$scope.assetsTotalRealizedGain = 0.0;
 	$scope.assetsTotalContribution = 0.0;
 	$scope.assetsTotalRealizedGainYtd = 0.0;
-	$scope.assetsTotalRealizedGainYtdTax = 0.0;
+	$scope.assetsTotalYtdShortTermTax = 0.0;
+	$scope.assetsTotalYtdLongTermTax = 0.0;
+	$scope.assetsTotalYtdShortTermTaxAdj = 0.0;
+	$scope.assetsTotalYtdLongTermTaxAdj = 0.0;
+	$scope.assetsTotalYtdShortTermTaxAdjBool = false;
+	$scope.assetsTotalYtdLongTermTaxAdjBool = false;
 	
 	$scope.positions = [];
 
@@ -24,7 +29,10 @@ app.controller("dashboardCtrl", function($scope, $http) {
 					$scope.assetsTotalRealizedGain += $scope.assets[i].realizedGain;
 					$scope.assetsTotalContribution += $scope.assets[i].contribution;
 					$scope.assetsTotalRealizedGainYtd += $scope.assets[i].realizedGainYtd;
-					$scope.assetsTotalRealizedGainYtdTax += $scope.assets[i].realizedGainYtdTax;
+					$scope.assetsTotalYtdShortTermTax += $scope.assets[i].ytdShortTermTax;
+					$scope.assetsTotalYtdLongTermTax += $scope.assets[i].ytdLongTermTax;
+					$scope.assetsTotalYtdShortTermTaxAdj += $scope.assets[i].ytdShortTermTaxAdj;
+					$scope.assetsTotalYtdLongTermTaxAdj += $scope.assets[i].ytdLongTermTaxAdj;
 				}
 			},
 			function errorCallback(response) {

@@ -24,7 +24,8 @@ app.controller("manageCtrl", function($rootScope, $scope, $http) {
 	
 	// saved properties (settings)
 	$scope.propIexToken;
-	$scope.propTaxRate;
+	$scope.propTaxRateShortTerm;
+	$scope.propTaxRateLongTerm;
 	$scope.propContribution;
 	$scope.propQPlotBenchmarkSymbol = null;
 	$scope.propQPlotSimTargetPrinicipalInit = null;
@@ -47,7 +48,14 @@ app.controller("manageCtrl", function($rootScope, $scope, $http) {
 
 					// read in specific values from keyval map
 					$scope.propIexToken = $scope.manageKeyvalMap["pr.iextoken"];
-					$scope.propTaxRate = $scope.manageKeyvalMap["pr.tax"];
+					$scope.propTaxRateShortTerm = $scope.manageKeyvalMap["pr.tax"];
+					if ($scope.propTaxRateShortTerm == null) {
+						$scope.propTaxRateShortTerm = 0.3;
+					}
+					$scope.propTaxRateLongTerm = $scope.manageKeyvalMap["pr.tax.lt"];
+					if ($scope.propTaxRateLongTerm == null) {
+						$scope.propTaxRateLongTerm = 0.2;
+					}
 					$scope.propContribution = $scope.manageKeyvalMap["pr.contr"];
 					$scope.propQPlotBenchmarkSymbol = $scope.manageKeyvalMap["pr.qpbs"];
 					if ($scope.propQPlotBenchmarkSymbol == null) {
@@ -295,11 +303,17 @@ app.controller("manageCtrl", function($rootScope, $scope, $http) {
 		}
 		saveSetting("pr.iextoken", $scope.propIexToken);
 		
-		// save Tax Rate setting
-		if (! isFinite($scope.propTaxRate)) {
-			$scope.propTaxRate = 0;
+		// save Short TermTax Rate setting
+		if (! isFinite($scope.propTaxRateShortTerm)) {
+			$scope.propTaxRateShortTerm = 0.3;
 		}
-		saveSetting("pr.tax", $scope.propTaxRate);
+		saveSetting("pr.tax", $scope.propTaxRateShortTerm);
+		
+		// save Long TermTax Rate setting
+		if (! isFinite($scope.propTaxRateLongTerm)) {
+			$scope.propTaxRateLongTerm = 0.2;
+		}
+		saveSetting("pr.tax.lt", $scope.propTaxRateLongTerm);
 		
 		// save Contribution setting
 		if (! isFinite($scope.propContribution)) {
@@ -502,10 +516,12 @@ app.controller("manageCtrl", function($rootScope, $scope, $http) {
 			    lastDate: data.lastDate,
 			    basketEntities: data.basketEntities,
 			    securities: data.securities,
-			    transactions: []
+			    transactions: [],
+			    capitalGains: data.capitalGains,
+			    dividendIncome: data.dividendIncome
 		};
 		
-		// copy over only data that's persisted in the db
+		// copy over only transaction data that's persisted in the db
 		var i;
 		for (i = 0; i < data.transactions.length; i++) {
 			var t = data.transactions[i];
@@ -555,7 +571,7 @@ app.controller("manageCtrl", function($rootScope, $scope, $http) {
 		
 		var result = "";
 
-		// header
+		// Transaction header
 		result = result + "Transaction ID,";
 		result = result + "Basket ID,";
 		result = result + "Asset,";
@@ -565,7 +581,7 @@ app.controller("manageCtrl", function($rootScope, $scope, $http) {
 		result = result + "Transaction Type,";
 		result = result + "Shares,";
 		result = result + "Price\n";
-		
+		// Transaction data
 		for (i = 0; i < jsonData.transactions.length; i++) {
 			var t = jsonData.transactions[i];
 
@@ -578,6 +594,94 @@ app.controller("manageCtrl", function($rootScope, $scope, $http) {
 			result = result + t.type + ",";
 			result = result + t.shares + ",";
 			result = result + t.price + "\n";
+		}
+		
+		// Capital gains header
+		result = result + "\n";
+		result = result + "Tax Year,";
+		result = result + "Cost Basis Term,";
+		result = result + "Security ID,";
+		result = result + "Security Symbol,";
+		result = result + "Acq Tran ID,";
+		result = result + "Acq Date,";
+		result = result + "Acq Shares,";
+		result = result + "Acq Share Conv Factor,";
+		result = result + "Acq Share Price,";
+		result = result + "Disp Tran ID,";
+		result = result + "Disp Date,";
+		result = result + "Disp Shares,";
+		result = result + "Disp Share Conv Factor,";
+		result = result + "Disp Share Price,";
+		result = result + "Wash Sale Acq Tran ID,";
+		result = result + "Wash Sale Cap Gain Per Disp Share Adjustment,";
+		result = result + "Wash Sale Disp Tran ID,";
+		result = result + "Wash Sale Cost Basis Per Acq Share Adjustment,";
+		result = result + "Wash Sale Holding Period Adjustment,";
+		result = result + "Unadj Cost Basis,";
+		result = result + "Unadj Cap Gain Per Disp Share,";
+		result = result + "Unadj Cap Gain,";
+		result = result + "Unadj Term,";
+		result = result + "Cost Basis,";
+		result = result + "Sale Proceeds,";
+		result = result + "Wash Sale Adjustment,";
+		result = result + "Income Per Disp Share,";
+		result = result + "Holding Period,";
+		result = result + "Income\n";
+		// Capital gains data
+		for (i = 0; i < jsonData.capitalGains.length; i++) {
+			var cg = jsonData.capitalGains[i];
+
+			result = result + cg.taxYear + ",";
+			result = result + cg.costBasisTerm + ",";
+			result = result + cg.secId + ",";
+			result = result + cg.symbol + ",";
+			result = result + cg.acqTranId + ",";
+			result = result + cg.acqDate + ",";
+			result = result + cg.acqShares + ",";
+			result = result + cg.acqShareConvFactor + ",";
+			result = result + cg.acqSharePrice + ",";
+			result = result + cg.dispTranId + ",";
+			result = result + cg.incomeDate + ",";
+			result = result + cg.dispShares + ",";
+			result = result + cg.dispShareConvFactor + ",";
+			result = result + cg.dispSharePrice + ",";
+			result = result + cg.washSaleAcqTranId + ",";
+			result = result + cg.washSaleCapGainPerDispShareAdj + ",";
+			result = result + cg.washSaleDispTranId + ",";
+			result = result + cg.washSaleCostBasisPerAcqShareAdj + ",";
+			result = result + cg.washSaleHoldingPeriodAdj + ",";
+			result = result + cg.unadjCostBasis + ",";
+			result = result + cg.unadjCapGainPerDispShare + ",";
+			result = result + cg.unadjCapGain + ",";
+			result = result + cg.unadjTerm + ",";
+			result = result + cg.costBasis + ",";
+			result = result + cg.saleProceeds + ",";
+			result = result + cg.washSaleAdj + ",";
+			result = result + cg.incomePerDispShare + ",";
+			result = result + cg.holdingPeriod + ",";
+			result = result + cg.income + "\n";
+		}
+		
+		// Dividend income header
+		result = result + "\n";
+		result = result + "Tax Year,";
+		result = result + "Security ID,";
+		result = result + "Security Symbol,";
+		result = result + "Dividend Tran ID,";
+		result = result + "Dividend Date,";
+		result = result + "Dividend Shares,";
+		result = result + "Ord Dividend Income\n";
+		// Dividend Income data
+		for (i = 0; i < jsonData.dividendIncome.length; i++) {
+			var d = jsonData.dividendIncome[i];
+
+			result = result + d.taxYear + ",";
+			result = result + d.secId + ",";
+			result = result + d.symbol + ",";
+			result = result + d.incomeTranId + ",";
+			result = result + d.incomeDate + ",";
+			result = result + d.acqShares + ",";
+			result = result + d.income + "\n";
 		}
 		
 		return result;

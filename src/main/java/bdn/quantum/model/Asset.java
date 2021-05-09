@@ -13,10 +13,14 @@ public class Asset {
 	private BigDecimal principal = BigDecimal.ZERO;
 	private BigDecimal totalPrincipal = BigDecimal.ZERO;
 	private BigDecimal lastValue = BigDecimal.ZERO;
+	private BigDecimal unrealizedGain = BigDecimal.ZERO;
 	private BigDecimal realizedGain = BigDecimal.ZERO;
 	private BigDecimal realizedGainYtd = BigDecimal.ZERO;
-	private BigDecimal realizedGainYtdTax = BigDecimal.ZERO;
-	private BigDecimal unrealizedGain = BigDecimal.ZERO;
+	private BigDecimal ytdShortTermTax = BigDecimal.ZERO;
+	private BigDecimal ytdLongTermTax = BigDecimal.ZERO;
+	private BigDecimal ytdShortTermTaxAdj = BigDecimal.ZERO;
+	private BigDecimal ytdLongTermTaxAdj = BigDecimal.ZERO;
+
 
 	// optional elements - present only when all Assets are returned for portfolio and these
 	// statistics can be calculated relative to the portfolio
@@ -30,16 +34,20 @@ public class Asset {
 	}
 
 	public Asset(Integer basketId, String basketName, BigDecimal principal, BigDecimal totalPrincipal, BigDecimal lastValue,
-			BigDecimal realizedGain, BigDecimal realizedGainYtd, BigDecimal realizedGainYtdTax, BigDecimal unrealizedGain) {
+			BigDecimal unrealizedGain, BigDecimal realizedGain, BigDecimal realizedGainYtd, BigDecimal ytdShortTermTax,
+			BigDecimal ytdLongTermTax, BigDecimal ytdShortTermTaxAdj, BigDecimal ytdLongTermTaxAdj) {
 		this.basketId = basketId;
 		this.basketName = basketName;
 		this.principal = principal;
 		this.totalPrincipal = totalPrincipal;
 		this.lastValue = lastValue;
+		this.unrealizedGain = unrealizedGain;
 		this.realizedGain = realizedGain;
 		this.realizedGainYtd = realizedGainYtd;
-		this.realizedGainYtdTax = realizedGainYtdTax;
-		this.unrealizedGain = unrealizedGain;
+		this.ytdShortTermTax = ytdShortTermTax;
+		this.ytdLongTermTax = ytdLongTermTax;
+		this.ytdShortTermTaxAdj = ytdShortTermTaxAdj;
+		this.ytdLongTermTaxAdj = ytdLongTermTaxAdj;
 	}
 	
 	public Asset(BasketEntity be) {
@@ -95,14 +103,6 @@ public class Asset {
 		this.totalPrincipal = totalPrincipal;
 	}
 
-	public BigDecimal getUnrealizedGain() {
-		return unrealizedGain;
-	}
-
-	public void setUnrealizedGain(BigDecimal unrealizedGain) {
-		this.unrealizedGain = unrealizedGain;
-	}
-
 	public BigDecimal getTargetRatio() {
 		return targetRatio;
 	}
@@ -135,6 +135,14 @@ public class Asset {
 		this.contribution = contribution;
 	}
 
+	public BigDecimal getUnrealizedGain() {
+		return unrealizedGain;
+	}
+
+	public void setUnrealizedGain(BigDecimal unrealizedGain) {
+		this.unrealizedGain = unrealizedGain;
+	}
+
 	public BigDecimal getRealizedGainYtd() {
 		return realizedGainYtd;
 	}
@@ -143,12 +151,36 @@ public class Asset {
 		this.realizedGainYtd = realizedGainYtd;
 	}
 
-	public BigDecimal getRealizedGainYtdTax() {
-		return realizedGainYtdTax;
+	public BigDecimal getYtdShortTermTax() {
+		return ytdShortTermTax;
 	}
 
-	public void setRealizedGainYtdTax(BigDecimal realizedGainYtdTax) {
-		this.realizedGainYtdTax = realizedGainYtdTax;
+	public void setYtdShortTermTax(BigDecimal ytdShortTermTax) {
+		this.ytdShortTermTax = ytdShortTermTax;
+	}
+
+	public BigDecimal getYtdLongTermTax() {
+		return ytdLongTermTax;
+	}
+
+	public void setYtdLongTermTax(BigDecimal ytdLongTermTax) {
+		this.ytdLongTermTax = ytdLongTermTax;
+	}
+
+	public BigDecimal getYtdShortTermTaxAdj() {
+		return ytdShortTermTaxAdj;
+	}
+
+	public void setYtdShortTermTaxAdj(BigDecimal ytdShortTermTaxAdj) {
+		this.ytdShortTermTaxAdj = ytdShortTermTaxAdj;
+	}
+
+	public BigDecimal getYtdLongTermTaxAdj() {
+		return ytdLongTermTaxAdj;
+	}
+
+	public void setYtdLongTermTaxAdj(BigDecimal ytdLongTermTaxAdj) {
+		this.ytdLongTermTaxAdj = ytdLongTermTaxAdj;
 	}
 
 	@Override

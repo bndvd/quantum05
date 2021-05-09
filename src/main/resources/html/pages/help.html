@@ -22,6 +22,8 @@
 
 <p><b>Value</b> – The current dollar value of a Security or Asset. [Price x Shares]
 
+<p><b>LT Shares</b> – Long-term shares, the quantity of the shares that were purchased prior to a year ago. Selling them would qualify for long-term capital gain tax treatment.
+
 <p><b>Unrlzd Gain</b> – Unrealized gain is the profit/loss on all of your <b>unsold</b> Shares. This represents the capital gains that would be achieved if the Asset were sold at the current Price.  [Value – Principal]
 <br><i>Note: A positive value represents profit, while a negative value represents loss.</i>
 
@@ -74,11 +76,13 @@
 
 <p><b>Rlzd Gain YTD</b> – The Rlzd Gain for the current calendar year, stating on Jan 1.
 
-<p><b>Tax YTD</b> – using a pre-set tax % assigned by user, this is a calculation of the potential tax on the gains made year-to-date.
+<p><b>ST Tax YTD</b> – using pre-set short-term tax % assigned by user, this is a calculation of the potential tax on the short-term gains and income made year-to-date.
+
+<p><b>LT Tax YTD</b> – using pre-set long-term tax % assigned by user, this is a calculation of the potential tax on the long-term gains and income made year-to-date.
 
 
 <div class="w3-container">
-<p><i>The table below demonstrates the effect of several transactions on the portfolio calculations and the ties together the above concepts.
+<p><i>The table below demonstrates the effect of several transactions on the portfolio calculations and ties together the above concepts.
 </i>
 <table class="w3-table w3-bordered">
 <tr class="w3-light-grey">
@@ -306,8 +310,11 @@
 <ul>
 <li><b>IEX Publishable Token</b>: You need to set up an account with IEX Cloud, and enter the IEX publishable token in this field. Go to <a target="_blank" href="https://iexcloud.io">http://iexcloud.io</a> to register.<br><br></li>
 
-<li><b>Tax Rate</b>: enter a decimal (<1.0) to represent the desired marginal tax rate at which the capital gains and dividends are expected to be taxed
-<br><i>Note: You can use the tax rate based on your salary bracket, or a generic rate 25-30%.</i><br><br></li>
+<li><b>Short-Term Tax Rate</b>: enter a decimal (<1.0) to represent the desired tax rate at which the short-term capital gains and dividends are expected to be taxed. Short-term capital gains are calculated on assets held for 1 year or less.
+<br><i>Note: You can use the marginal tax rate based on your salary bracket, or a generic rate 25-35%.</i><br><br></li>
+
+<li><b>Long-Term Tax Rate</b>: enter a decimal (<1.0) to represent the desired marginal tax rate at which the long-term capital gains and dividends are expected to be taxed. Long-term capital gains are calculated on assets held for more than 1 year.
+<br><i>Note: In most situations, the default IRS federal long-term tax rate of 15% applies. Quantum's default value of 20% adds an additional 5% state tax.</i><br><br></li>
 
 <li><b>Contribution Amount</b>: The dollar amount of your next investment (either as one-time, or at a regular weekly/bi-weekly/monthly/etc. cadence)<br><br></li>
 

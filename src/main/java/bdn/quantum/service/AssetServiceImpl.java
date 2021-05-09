@@ -3,8 +3,11 @@ package bdn.quantum.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +17,8 @@ import bdn.quantum.QuantumConstants;
 import bdn.quantum.QuantumProperties;
 import bdn.quantum.model.Asset;
 import bdn.quantum.model.BasketEntity;
+import bdn.quantum.model.CapitalGainFragment;
+import bdn.quantum.model.IncomeFragment;
 import bdn.quantum.model.Position;
 import bdn.quantum.model.Security;
 import bdn.quantum.model.SecurityEntity;
@@ -21,9 +26,9 @@ import bdn.quantum.model.Transaction;
 import bdn.quantum.model.util.AssetComparator;
 import bdn.quantum.model.util.PositionComparator;
 import bdn.quantum.model.util.SecurityComparator;
-import bdn.quantum.model.util.TransactionComparator;
 import bdn.quantum.repository.BasketRepository;
 import bdn.quantum.repository.SecurityRepository;
+import bdn.quantum.util.QuantumDateUtils;
 
 @Service("assetService")
 public class AssetServiceImpl implements AssetService {
@@ -35,6 +40,8 @@ public class AssetServiceImpl implements AssetService {
 	@Autowired
 	private TransactionService transactionService;
 	@Autowired
+	private IncomeService incomeService;
+	@Autowired
 	private KeyvalService keyvalService;
 	@Autowired
 	private MarketDataService marketDataService;
@@ -45,8 +52,6 @@ public class AssetServiceImpl implements AssetService {
 	private AssetComparator assetComparator;
 	@Autowired
 	private SecurityComparator securityComparator;
-	@Autowired
-	private TransactionComparator transactionComparator;
 
 	@Override
 	public Iterable<BasketEntity> getBaskets() {
@@ -150,7 +155,10 @@ public class AssetServiceImpl implements AssetService {
 			BigDecimal lastValue = BigDecimal.ZERO;
 			BigDecimal realizedGain = BigDecimal.ZERO;
 			BigDecimal realizedGainYtd = BigDecimal.ZERO;
-			BigDecimal realizedGainYtdTax = BigDecimal.ZERO;
+			BigDecimal ytdShortTermTax = BigDecimal.ZERO;
+			BigDecimal ytdLongTermTax = BigDecimal.ZERO;
+			BigDecimal ytdShortTermTaxAdj = BigDecimal.ZERO;
+			BigDecimal ytdLongTermTaxAdj = BigDecimal.ZERO;
 			BigDecimal unrealizedGain = BigDecimal.ZERO;
 
 			Iterable<Position> positionIter = getPositions(basketId);
@@ -167,12 +175,15 @@ public class AssetServiceImpl implements AssetService {
 				}
 				realizedGain = realizedGain.add(p.getRealizedGain());
 				realizedGainYtd = realizedGainYtd.add(p.getRealizedGainYtd());
-				realizedGainYtdTax = realizedGainYtdTax.add(p.getRealizedGainYtdTax());
+				ytdShortTermTax = ytdShortTermTax.add(p.getYtdShortTermTax());
+				ytdLongTermTax = ytdLongTermTax.add(p.getYtdLongTermTax());
+				ytdShortTermTaxAdj = ytdShortTermTaxAdj.add(p.getYtdShortTermTaxAdj());
+				ytdLongTermTaxAdj = ytdLongTermTaxAdj.add(p.getYtdLongTermTaxAdj());
 				unrealizedGain = unrealizedGain.add(p.getUnrealizedGain());
 			}
 
-			result = new Asset(basketId, basketName, principal, totalPrincipal, lastValue, realizedGain,
-					realizedGainYtd, realizedGainYtdTax, unrealizedGain);
+			result = new Asset(basketId, basketName, principal, totalPrincipal, lastValue, unrealizedGain, realizedGain,
+					realizedGainYtd, ytdShortTermTax, ytdLongTermTax, ytdShortTermTaxAdj, ytdLongTermTaxAdj);
 		}
 
 		return result;
@@ -312,15 +323,26 @@ public class AssetServiceImpl implements AssetService {
 		Position result = Position.EMPTY_POSITION;
 	
 		if (s != null) {
-			BigDecimal taxRate = BigDecimal.ZERO;
-			String taxRateStr = keyvalService.getKeyvalStr(QuantumProperties.PROP_PREFIX + QuantumProperties.TAX_RATE);
+			// default long-term tax rate is 30% to account for assumed federal 25% and state 5% tax rates
+			BigDecimal shortTermTaxRate = new BigDecimal(0.3);
+			String taxRateStr = keyvalService.getKeyvalStr(QuantumProperties.PROP_PREFIX + QuantumProperties.SHORT_TERM_TAX_RATE);
 			if (taxRateStr != null) {
 				try {
-					taxRate = new BigDecimal(taxRateStr);
+					shortTermTaxRate = new BigDecimal(taxRateStr);
 				}
 				catch(Exception exc) {
 					exc.printStackTrace();
-					taxRate = BigDecimal.ZERO;
+				}
+			}
+			// default long-term tax rate is 20% to account for assumed federal 15% and state 5% tax rates
+			BigDecimal longTermTaxRate = new BigDecimal(0.2);
+			taxRateStr = keyvalService.getKeyvalStr(QuantumProperties.PROP_PREFIX + QuantumProperties.LONG_TERM_TAX_RATE);
+			if (taxRateStr != null) {
+				try {
+					longTermTaxRate = new BigDecimal(taxRateStr);
+				}
+				catch(Exception exc) {
+					exc.printStackTrace();
 				}
 			}
 			
@@ -329,69 +351,148 @@ public class AssetServiceImpl implements AssetService {
 			BigDecimal principal = BigDecimal.ZERO;
 			BigDecimal totalPrincipal = BigDecimal.ZERO;
 			BigDecimal shares = BigDecimal.ZERO;
-			BigDecimal realizedGain = BigDecimal.ZERO;
+			BigDecimal sharesLongTerm = BigDecimal.ZERO;
+			
+			BigDecimal realizedGain = BigDecimal.ZERO;		// total gain up to a given transaction
 			BigDecimal realizedGainYtd = BigDecimal.ZERO;
+			
+			BigDecimal ytdShortTermIncome = BigDecimal.ZERO;
+			BigDecimal ytdShortTermTaxAdj = BigDecimal.ZERO;
+			BigDecimal ytdLongTermIncome = BigDecimal.ZERO;
+			BigDecimal ytdLongTermTaxAdj = BigDecimal.ZERO;
+
+			Date todaysDate = new Date();
+			Date oneYearAgo = QuantumDateUtils.addYears(todaysDate, -1);
+			int currentYear = QuantumDateUtils.getDateField(todaysDate, Calendar.YEAR);
 	
-			Iterable<Transaction> tranIter = transactionService.getTransactionsForSecurity(secId);
-			List<Transaction> transactions = new ArrayList<>();
-			tranIter.forEach(transactions::add);
-			transactions.sort(transactionComparator);
+			
+			List<Transaction> transactions = transactionService.getTransactionsForSecurity(secId);
+			Map<Integer, List<IncomeFragment>> incomeMap = incomeService.getIncomeFragmentsByTransaction(transactions);
+			
 			for (Transaction t : transactions) {
+				Integer tId = t.getId();
+				Date tDate = t.getTranDate();
+				boolean tranInCurrentYear = (currentYear == QuantumDateUtils.getDateField(tDate, Calendar.YEAR));
 				BigDecimal tPrincipalDelta = BigDecimal.ZERO;
 				BigDecimal tValue = BigDecimal.ZERO;
-				if (t.getPrice() == null || t.getShares() == null) {
+				BigDecimal tShares = t.getShares();
+				
+				if (t.getPrice() == null || tShares == null) {
 					System.err.println("AssetServiceImpl::getPosition - ERROR: encountered transaction with null price or shares. Skipping calculations...");
 					continue;
 				}
 				else if (t.getType().equals(QuantumConstants.TRAN_TYPE_BUY)) {
-					BigDecimal tShares = t.getShares();
 					tPrincipalDelta = t.getPrice().multiply(tShares);
 					principal = principal.add(tPrincipalDelta);
 					totalPrincipal = totalPrincipal.add(tPrincipalDelta);
 					shares = shares.add(tShares);
+					if (QuantumDateUtils.beforeDay(tDate, oneYearAgo)) {
+						sharesLongTerm = sharesLongTerm.add(tShares);
+					}
 					
-					tValue = t.getPrice().multiply(t.getShares());
+					tValue = t.getPrice().multiply(tShares);
 					// tPrice will be used for future dividend transactions as well as this transaction
 					tPrice = t.getPrice();
 				}
-				// using Average Cost Basis for computing cost/profit and deducting from
-				// principal
 				else if (t.getType().equals(QuantumConstants.TRAN_TYPE_SELL)) {
-					BigDecimal averageCostPerShare = principal.divide(shares,
-							QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
-					// subtract from zero to make the delta negative in case of a SELL
-					tPrincipalDelta = BigDecimal.ZERO.subtract(t.getShares().multiply(averageCostPerShare));
-					BigDecimal transactionProfit = (t.getPrice().multiply(t.getShares())).add(tPrincipalDelta);
+					tPrincipalDelta = BigDecimal.ZERO;
+					BigDecimal transactionProfit = BigDecimal.ZERO;
+					
+					// calculate principal delta and transaction income (cap gains + wash sale adjustments) from IncomeFragments
+					if (incomeMap != null && incomeMap.get(tId) != null) {
+						List<IncomeFragment> tranIFList = incomeMap.get(tId);
+						for (IncomeFragment incF : tranIFList) {
+							transactionProfit = transactionProfit.add(incF.getIncome());
+							if (incF instanceof CapitalGainFragment) {
+								CapitalGainFragment cgf = (CapitalGainFragment) incF;
+								tPrincipalDelta = tPrincipalDelta.subtract(cgf.getCostBasis());
+								if (tranInCurrentYear) {
+									String term = cgf.getCostBasisTerm();
+									if (term != null && term.equals(QuantumConstants.COSTBASIS_LONGTERM)) {
+										ytdLongTermIncome = ytdLongTermIncome.add(cgf.getIncome());
+										if (cgf.getWashSaleAdj() != null) {
+											ytdLongTermTaxAdj = ytdLongTermTaxAdj.add(cgf.getWashSaleAdj());
+										}
+									}
+									else {
+										ytdShortTermIncome = ytdShortTermIncome.add(cgf.getIncome());
+										if (cgf.getWashSaleAdj() != null) {
+											ytdShortTermTaxAdj = ytdShortTermTaxAdj.add(cgf.getWashSaleAdj());
+										}
+									}
+								}
+							}
+							else {
+								System.err.println("AssetServiceImpl::getPosition - ERROR: encountered non-capgain IncomeFragment data for tranId:"+
+										tId+" secId:"+secId+". Principal and Income calculations will be incorrect");
+							}
+						}
+					}
+					else {
+						System.err.println("AssetServiceImpl::getPosition - ERROR: encountered missing IncomeFragment data for tranId:"+
+									tId+" secId:"+secId+". Principal and Income calculations will be incorrect");
+					}
+					
 					realizedGain = realizedGain.add(transactionProfit);
 					// if transaction is in this year, add to realized gain YTD
-					if (t.isInCurrentYear()) {
+					if (tranInCurrentYear) {
 						realizedGainYtd = realizedGainYtd.add(transactionProfit);
 					}
 	
 					principal = principal.add(tPrincipalDelta);
-					shares = shares.subtract(t.getShares());
+					shares = shares.subtract(tShares);
+					sharesLongTerm = sharesLongTerm.subtract(tShares);
+					if (sharesLongTerm.compareTo(BigDecimal.ZERO) < 0) {
+						sharesLongTerm = BigDecimal.ZERO;
+					}
 					
-					tValue = t.getPrice().multiply(t.getShares());
+					tValue = t.getPrice().multiply(tShares);
 					tPrice = t.getPrice();
 				}
 				else if (t.getType().equals(QuantumConstants.TRAN_TYPE_DIVIDEND)) {
-					// do not update tPrice - since we want to use tPrice from previous transaction
-					// in the DIV case
-					BigDecimal dividend = t.getPrice().multiply(t.getShares());
+					// do not update tPrice - since we want to use tPrice from previous transaction in the DIV case
+					BigDecimal dividend = t.getPrice().multiply(tShares);
 					realizedGain = realizedGain.add(dividend);
-					// if transaction is in this year, add to realized gain YTD
-					if (t.isInCurrentYear()) {
+					
+					if (tranInCurrentYear) {
 						realizedGainYtd = realizedGainYtd.add(dividend);
+						
+						if (incomeMap != null && incomeMap.get(tId) != null) {
+							List<IncomeFragment> tranIFList = incomeMap.get(tId);
+							for (IncomeFragment incF : tranIFList) {
+								String term = incF.getCostBasisTerm();
+								if (term != null && term.equals(QuantumConstants.COSTBASIS_LONGTERM)) {
+									ytdLongTermIncome = ytdLongTermIncome.add(incF.getIncome());
+								}
+								else {
+									ytdShortTermIncome = ytdShortTermIncome.add(incF.getIncome());
+								}
+							}
+						}
+						else {
+							System.err.println("AssetServiceImpl::getPosition - ERROR: encountered missing IncomeFragment data for dividend tranId:"+
+										tId+" secId:"+secId+". Income calculations will be incorrect");
+						}
 					}
 					
 					tValue = dividend;
 				}
 				else if (t.getType().equals(QuantumConstants.TRAN_TYPE_SPLIT)) {
-					shares = shares.multiply(t.getShares());
+					shares = shares.multiply(tShares);
+					sharesLongTerm = sharesLongTerm.multiply(tShares);
 					tPrice = t.getPrice();
 				}
 				else if (t.getType().equals(QuantumConstants.TRAN_TYPE_CONVERSION)) {
-					shares = t.getShares();
+					// if total shares and long-term shares are equal at this point, replace the long-term shares
+					// with new amount; otherwise, use the conversion factor
+					if (sharesLongTerm.subtract(shares).abs().doubleValue() < QuantumConstants.THRESHOLD_DECIMAL_EQUALING_ZERO) {
+						sharesLongTerm = tShares;
+					}
+					else {
+						sharesLongTerm = sharesLongTerm.multiply(tShares).
+								divide(shares, QuantumConstants.NUM_DECIMAL_PLACES_PRECISION, RoundingMode.HALF_UP);
+					}
+					shares = tShares;
 					tPrice = t.getPrice();
 				}
 				// update total shares/value/realizedGain as of this transaction in Transaction
@@ -421,16 +522,25 @@ public class AssetServiceImpl implements AssetService {
 			
 			BigDecimal lastValue = lastStockPrice.multiply(shares);
 			BigDecimal unrealizedGain = lastValue.subtract(principal);
-	
-			BigDecimal realizedGainYtdTax = realizedGainYtd.multiply(taxRate);
+
+			BigDecimal ytdShortTermTax = BigDecimal.ZERO;
+			BigDecimal ytdLongTermTax = BigDecimal.ZERO;			
+			// if short-term has been defined by the user, calculate the tax/adjustment statistics
+			if (shortTermTaxRate != null && longTermTaxRate != null) {
+				ytdShortTermTax = ytdShortTermIncome.multiply(shortTermTaxRate);
+				ytdLongTermTax = ytdLongTermIncome.multiply(longTermTaxRate);
+			}	
+			
 			
 			List<Transaction> transactionList = null;
 			if (includeTransactions) {
 				transactionList = transactions;
 			}
 			
-			result = new Position(secId, symbol, principal, totalPrincipal, shares, realizedGain, realizedGainYtd,
-					realizedGainYtdTax, unrealizedGain, lastStockPrice, lastValue, transactionList);
+			result = new Position(secId, symbol, principal, totalPrincipal, shares, sharesLongTerm, unrealizedGain,
+					realizedGain, realizedGainYtd, ytdShortTermTax, ytdLongTermTax, ytdShortTermTaxAdj,
+					ytdLongTermTaxAdj, lastStockPrice, lastValue, transactionList);
+		
 		}
 	
 		return result;

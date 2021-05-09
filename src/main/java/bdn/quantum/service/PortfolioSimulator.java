@@ -16,7 +16,7 @@ import bdn.quantum.model.AbstractTransaction;
 import bdn.quantum.model.Transaction;
 import bdn.quantum.model.qplot.QChart;
 import bdn.quantum.model.util.TransactionComparator;
-import bdn.quantum.util.DateUtils;
+import bdn.quantum.util.QuantumDateUtils;
 import bdn.quantum.util.PortfolioSimulationException;
 
 @Service("portfolioSimulator")
@@ -105,7 +105,7 @@ public class PortfolioSimulator {
 			// Add transactions for initial principal, if non-zero
 			if (! BigDecimal.ZERO.equals(initPrincipal)) {
 				LocalDate ld = symbolToChartChainMap.get(symbols[0]).get(0).getLocalDate();
-				Date date = DateUtils.asDate(ld);
+				Date date = QuantumDateUtils.asDate(ld);
 				
 				for (int i = 0; i < numSecurities; i++) {
 					BigDecimal sharePrice = symbolToChartChainMap.get(symbols[i]).get(0).getClose(priceAdjustmentType);
@@ -139,7 +139,7 @@ public class PortfolioSimulator {
 						// add incremental principal to wallet
 						wallet = wallet.add(incrPrincipal);
 						
-						Date date = DateUtils.asDate(ld);
+						Date date = QuantumDateUtils.asDate(ld);
 						for (int i = 0; i < numSecurities; i++) {
 							sharePrices[i] = symbolToChartChainMap.get(symbols[i]).get(j).getClose(priceAdjustmentType);
 						}

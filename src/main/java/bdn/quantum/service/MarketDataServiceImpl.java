@@ -394,6 +394,7 @@ public class MarketDataServiceImpl implements MarketDataService {
 		// (2) start date is not included in the data returned by IEX service
 		if (mqeList.isEmpty() || (startDate != null && startDate.compareTo(mqeList.get(0).getMktDate()) < 0)) {
 			try {
+				System.out.println("MarketDataServiceImpl.loadQuoteChainRangeIntoRepository - Failed to load data from IEX service. Loading from json file for " + symbol);
 				Resource resource = new ClassPathResource("data/mkt-hist-sec-" + symbol.toUpperCase() + ".json");
 				InputStream is = resource.getInputStream();
 				
@@ -591,10 +592,8 @@ public class MarketDataServiceImpl implements MarketDataService {
 			Security se = assetService.getSecurityForSymbol(symbol);
 			if (se != null) {
 				Integer secId = se.getId();
-				Iterable<Transaction> tranIter = transactionService.getTransactionsForSecurityAndType(secId, QuantumConstants.TRAN_TYPE_SPLIT);
-				for (Transaction t : tranIter) {
-					result.add(t);
-				}
+				List<Transaction> tranList = transactionService.getTransactionsForSecurityAndType(secId, QuantumConstants.TRAN_TYPE_SPLIT);
+				result.addAll(tranList);
 			}
 			else {
 				System.err.println("MarketDataServiceImpl.getStockSplitTransactions - Error finding security for symbol " + symbol);

@@ -43,6 +43,8 @@ app.controller("chartsCtrl", function($rootScope, $scope, $http) {
 					axisLabelWidth: 80,
 					axisLabelFontSize: 12,
 					digitsAfterDecimal: 0,
+					maxNumberWidth: 20,
+					labelsKMB: false,
 					labelsSeparateLines: false,
 					labelsDiv: $scope.chartToGraphLegendIdMap[chartEnum],
 					hideOverlayOnMouseOut: false

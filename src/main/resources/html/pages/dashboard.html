@@ -17,7 +17,8 @@
 			<th class="w3-right-align">Contribution</th>
 			<th></th>
 			<th class="w3-right-align">Rlzd Gain YTD</th>
-			<th class="w3-right-align">Tax YTD</th>
+			<th class="w3-right-align">ST Tax YTD</th>
+			<th class="w3-right-align">LT Tax YTD</th>
 		</tr>
 		<tr ng-repeat="a in assets">
 			<td class="w3-right-align"><b>{{ a.basketName }}</b></td>
@@ -34,7 +35,8 @@
 			<td class="w3-right-align">{{ a.contribution | currency : "$" : 0 }}</td>
 			<td></td>
 			<td class="w3-right-align">{{ a.realizedGainYtd | currency : "$" : 0 }}</td>
-			<td class="w3-right-align">{{ a.realizedGainYtdTax | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ a.ytdShortTermTax | currency : "$" : 0 }}{{ a.ytdShortTermTaxAdj > 0 ? "*" : "" }}</td>
+			<td class="w3-right-align">{{ a.ytdLongTermTax | currency : "$" : 0 }}{{ a.ytdLongTermTaxAdj > 0 ? "*" : "" }}</td>
 		</tr>
 		<tr class="w3-grey">
 			<td class="w3-right-align">TOTAL</td>
@@ -51,9 +53,14 @@
 			<td class="w3-right-align">{{ assetsTotalContribution | currency : "$" : 0 }}</td>
 			<td></td>
 			<td class="w3-right-align">{{ assetsTotalRealizedGainYtd | currency : "$" : 0 }}</td>
-			<td class="w3-right-align">{{ assetsTotalRealizedGainYtdTax | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ assetsTotalYtdShortTermTax | currency : "$" : 0 }}{{ assetsTotalYtdShortTermTaxAdj > 0 ? "*" : "" }}</td>
+			<td class="w3-right-align">{{ assetsTotalYtdLongTermTax | currency : "$" : 0 }}{{ assetsTotalYtdLongTermTaxAdj > 0 ? "*" : "" }}</td>
 		</tr>
 	</table>
+	<div ng-show="((assetsTotalYtdShortTermTaxAdj > 0) || (assetsTotalYtdLongTermTaxAdj > 0))" w3-small class="w3-right-align"">
+		<font size=-2><i>* wash sale adjustment applied</i></font>
+	</div>
+
 </div>
 
 <div class="w3-margin">
@@ -65,6 +72,7 @@
 			<th class="w3-right-align">Shares</th>
 			<th class="w3-right-align">Value</th>
 			<th class="w3-right-align">Unrlzd Gain</th>
+			<th class="w3-right-align">LT Shares</th>
 		</tr>
 		<tr ng-repeat="p in positions">
 			<td class="w3-right-align"><b>{{ p.symbol }}</b></td>
@@ -73,6 +81,7 @@
 			<td class="w3-right-align">{{ p.shares | number : 3 }}</td>
 			<td class="w3-right-align">{{ p.lastValue | currency : "$" : 0 }}</td>
 			<td class="w3-right-align">{{ p.unrealizedGain | currency : "$" : 0 }}</td>
+			<td class="w3-right-align">{{ p.sharesLongTerm | number : 3 }}</td>
 		</tr>
 	</table>
 </div>

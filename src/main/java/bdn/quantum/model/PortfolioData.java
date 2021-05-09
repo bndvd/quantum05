@@ -9,14 +9,19 @@ public class PortfolioData {
 	private Iterable<BasketEntity> basketEntities;
 	private Iterable<Security> securities;
 	private Iterable<Transaction> transactions;
+	private Iterable<CapitalGainFragment> capitalGains;
+	private Iterable<DividendFragment> dividendIncome;
 	
 	public PortfolioData() {
 	}
 	
-	public PortfolioData(Iterable<BasketEntity> basketEntities, Iterable<Security> securities, Iterable<Transaction> transactions) {
+	public PortfolioData(Iterable<BasketEntity> basketEntities, Iterable<Security> securities, Iterable<Transaction> transactions,
+			Iterable<CapitalGainFragment> capitalGains, Iterable<DividendFragment> dividendIncome) {
 		setBasketEntities(basketEntities);
 		setSecurities(securities);
 		setTransactions(transactions);
+		setCapitalGains(capitalGains);
+		setDividendIncome(dividendIncome);
 	}
 
 	public String getVersion() {
@@ -60,6 +65,22 @@ public class PortfolioData {
 		computeLastDate();
 	}
 	
+	public Iterable<CapitalGainFragment> getCapitalGains() {
+		return capitalGains;
+	}
+
+	public void setCapitalGains(Iterable<CapitalGainFragment> capitalGains) {
+		this.capitalGains = capitalGains;
+	}
+
+	public Iterable<DividendFragment> getDividendIncome() {
+		return dividendIncome;
+	}
+
+	public void setDividendIncome(Iterable<DividendFragment> dividendIncome) {
+		this.dividendIncome = dividendIncome;
+	}
+
 	private void computeLastDate() {
 		if (transactions != null) {
 			for(Transaction t : transactions) {
