@@ -405,7 +405,8 @@ public class AssetServiceImpl implements AssetService {
 							transactionProfit = transactionProfit.add(incF.getIncome());
 							if (incF instanceof CapitalGainFragment) {
 								CapitalGainFragment cgf = (CapitalGainFragment) incF;
-								tPrincipalDelta = tPrincipalDelta.subtract(cgf.getCostBasis());
+								BigDecimal principalValueInCGF = cgf.getAcqShares().multiply(cgf.getAcqSharePrice());
+								tPrincipalDelta = tPrincipalDelta.subtract(principalValueInCGF);
 								if (tranInCurrentYear) {
 									String term = cgf.getCostBasisTerm();
 									if (term != null && term.equals(QuantumConstants.COSTBASIS_LONGTERM)) {

@@ -317,6 +317,7 @@ public class QPlotServiceImpl implements QPlotService {
 
 		// to create user portfolio series, add the security values across all
 		// securities
+		BigDecimal negValueAdjustment = BigDecimal.ZERO;
 		for (int i = 0; i < chartPointListsBySec.get(0).size(); i++) {
 			Integer id = chartPointListsBySec.get(0).get(i).getId();
 			LocalDate localDate = chartPointListsBySec.get(0).get(i).getDate();
@@ -324,6 +325,16 @@ public class QPlotServiceImpl implements QPlotService {
 			BigDecimal portfolioValue = BigDecimal.ZERO;
 			for (int j = 0; j < chartPointListsBySec.size(); j++) {
 				portfolioValue = portfolioValue.add(chartPointListsBySec.get(j).get(i).getValue());
+			}
+			portfolioValue = portfolioValue.add(negValueAdjustment);
+			
+			// disallow negative values, since portfolio value must be non-negative (traditional investment assumed)
+			// note: negative values can occur in benchmark portfolio, when it tries to follow a user-portfolio sale
+			// that's bigger than the benchmark's total value (reset benchmark to zero at that point, and remember
+			// the magnitude of the adjustment so we apply this adjustment going forward)
+			if (portfolioValue.compareTo(BigDecimal.ZERO) < 0) {
+				negValueAdjustment = portfolioValue.multiply(new BigDecimal(-1));
+				portfolioValue = BigDecimal.ZERO;
 			}
 
 			QPlotPoint p = new QPlotPoint(id, localDate, portfolioValue);
